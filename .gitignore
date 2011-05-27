@@ -12,3 +12,12 @@ project/plugins/src_managed
 .scala_dependencies
 .settings
 data
+output
+*.pdf
+*.aux
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc

@@ -1,0 +1,157 @@
+\documentclass[
+  a4paper,
+  11pt,
+  twoside,
+  toc=flat,
+  listof=flat
+]{scrbook}
+
+% page geometry and margins
+\usepackage[
+  paper=a4paper,
+  tmargin=3cm,
+  bmargin=3cm,
+  lmargin=3.2cm,
+  rmargin=3cm,
+  footskip=2cm,
+  includeheadfoot
+]{geometry}
+
+% fancy headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\setlength\headheight{15pt}
+\fancyhf{}
+\fancyhead[RO,LE]{\textsf{\nouppercase{\leftmark}}}
+\fancyfoot[C]{\thepage}
+
+% 1.5 line spacing
+\usepackage{setspace}
+\onehalfspacing
+
+% remove paragraph indent, but use space between paragraphs instead
+\setlength{\parindent}{0mm}
+\setlength{\parskip}{1em plus 0.5em minus 0.5em}
+
+% fancy chapter headings
+\usepackage[Sonny]{fncychap}
+
+% graphics
+\usepackage{subfig}
+\usepackage{graphicx}
+
+% float placement (allow the H option)
+\usepackage{float}
+
+% cmbright fonts
+\usepackage{cmbright}
+
+% amsmath
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+% captions
+\usepackage{caption}
+\DeclareCaptionStyle{small}{
+  labelfont={sf,bf,footnotesize},
+  textfont={sf,footnotesize},
+  justification={centering},
+  aboveskip={2pt}
+}
+
+% hyperlinks within the PDF document
+\usepackage{xcolor}
+\usepackage[
+  linkbordercolor=white,
+  colorlinks=true,
+  linkcolor=blue
+]{hyperref}
+
+% tabular material
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% --- THE DOCUMENT ---
+\begin{document}
+
+% title page
+\title{Bandwidth of Markers in Cutaneous Trunci Skin Twitch Experiment}
+\author{Jonathan Merritt}
+\begin{titlepage}
+  \maketitle
+\end{titlepage}
+
+% table of contents
+\tableofcontents
+\listoftables
+\listoffigures
+
+% description of analysis
+\chapter{Analysis Method}
+
+\section{Data Acquisition and De-Trending}
+
+Marker data were obtained from Motion Analysis software in the form of \texttt{trc} files, which contained positions of markers at regularly-sampled intervals.  The $x$, $y$ and $z$ coordinates of the markers were first ``de-trended'' by removing any linear trend from their values.  A linear trend was found by obtaining a least-squares best fit for the linear equation relating the coordinates to their sample number, and this trend was then subtracted from the data.  De-trending was required in order to remove any large offset or constant velocity component from the marker data, which would otherwise disrupt the later power analysis.
+
+\section{Power Spectral Density (PSD) Calculation}
+
+The de-trended coordinate data were padded with zeros to reach the length of the next largest power of two (it was a requirement of the Fast Fourier Transformation algorithm that the data length must be equal to a power of two).  They were processed using a Fast Fourier Transformation (FFT) to obtain a frequency domain representation.  Let $i$ be the sample number: $i = 0, \ldots, N-1$, where $N$ was the number of samples in the zero-padded signal.  Let $q_{ij}$ represent the $i$th sample from component $j$
+\begin{equation}
+q_{ij} = \begin{cases}
+x_i & j=0, \\
+y_i & j=1, \\
+z_i & j=2.
+\end{cases} \hspace{1em} i = 0, \ldots, N-1
+\end{equation}
+The component-wise frequency-domain representation of each markers, $H_{kj}$, found via the FFT, satisfied the relationship
+\begin{equation}
+H_{kj} = \sum_{n=0}^{N-1} q_{nj} e^{(2\pi i/N)kn} \hspace{3em} k = 0, \ldots, N-1, \hspace{1em} j = 0, 1, 2.
+\label{eq:dft}
+\end{equation}
+Each complex-valued $H_{kj}$ represented the magnitude and phase of a discrete sinusoidal frequency component.  Since $q_{ij} \in \mathbb{R}$, the $H_{kj}$ values were symmetric about their central component ($k = N/2$).  The frequencies, $f_{kj}$, which corresponded to each $H_{kj}$ were given by
+\begin{equation}
+f_{kj} = \frac{f_s k}{N} \hspace{3em} k = 0, \ldots, \frac{N}{2}
+\end{equation}
+where $f_s$ was the sampling frequency.  The signal power, $P_{kj}$, at each frequency was then found from
+\begin{equation}
+P_{kj} = \begin{cases}
+\left(\left| H_{kj} \right| / M \right)^2 & \text{if $k=0$ or $k=\frac{N}{2}$},\\
+2\left(\left| H_{kj} \right| / M \right)^2 & \text{otherwise.}
+\end{cases} \hspace{3em} k = 0,\ldots,\frac{N}{2}
+\end{equation}
+where $M$ was the number of samples in the original (non-zero-padded) coordinate.  The Nyquist ($k=N/2$) and constant ($k=0$) components were unique for the range $k=0,\ldots,N-1$, while the other components had complex-conjugate pairs that had to be accounted for in the range $k=N/2+1,\ldots,N-1$.  The set of values $\left\{ P_{kj} \right\}$ comprised the power spectral density estimate for the signal.
+
+\section{Marker Bandwidth}
+
+The ``bandwidth'' of the marker coordinate data was estimated.  First, the total power in the signal for each component, $P_j$, was found by summing the signal power over all frequencies
+\begin{equation}
+P_j = \sum_{k=0}^{N/2} P_{kj} \hspace{3em} j = 0, 1, 2
+\end{equation}
+Then, the smallest index, $b_j$, was sought which satisfied the relationship
+\begin{equation}
+b_j = \min z_j \text{ such that } \sum_{k=0}^{z_j} \frac{P_{kj}}{P_j} \ge c
+\end{equation}
+where $c$ was some fraction of the total signal power representing a reasonable estimate of the limit of the power in the signal in the presence of noise and other factors.  For the results below, a value of $c = 0.9$ was used.  The bandwidth of the marker was then the value of $f_{bj}$, the frequency below which $c$ fraction of the signal power was contained.  The bandwidth of $x$, $y$ and $z$ coordinates ($f_{b0}$, $f_{b1}$ and $f_{b2}$ respectively) were computed independently and the maximum bandwidth was reported for each marker
+\begin{equation}
+f_b = \max f_{bj}
+\end{equation}
+
+\section{PSD and Filtered Data plots for 90th-Percentile Markers}
+
+For each trial, a marker was selected which occupied the 90th percentile bandwidth (i.e.\ 90\% of all other markers in the trial had a lower computed bandwidth).  A power spectral distribution plot was created for this marker in each trial.  In addition, a suggested sampling frequency, $f_{ss}$, was computed as
+\begin{equation}
+f_{ss} = 8 f_{b,90\%}
+\end{equation}
+in which the factor of 8 was an arbitrary multiplier intended to raise the sampling frequency high enough above the expected bandwidth of the 90th percentile marker ($f_{b,90\%}$) to obtain high-fidelity results.  The data from this marker was then low-pass filtered using a forward-reverse, second-order Butterworth filter with a cutoff frequency at $f_{ss}$, and was plotted against the original data.  This provided a visual check of the effects of sampling at the suggested frequency.
+
+\section{Gap Information}
+
+Gaps in the original data for each trial were detected from the absence of numeric fields in the \texttt{trc} files.  For the analyses described above, these gaps were filled using linear interpolation prior to all processing.  However, the gaps were also reported below, so that they may be filled more intelligently if necessary.
+
+\chapter{Trial Data}
+
+\input{../output/tex/bandwidth.tex}
+
+\end{document}

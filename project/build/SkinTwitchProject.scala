@@ -4,6 +4,8 @@ import de.element34.sbteclipsify._
 class SkinTwitchProject(info: ProjectInfo) extends DefaultProject(info)
 with Eclipsify {
 
+  val scalaSwing = "org.scala-lang" % "scala-swing" % "2.9.0"
+  
   val scalaToolsSnapshots = "Scala Tools Snapshots" at 
     "http://scala-tools.org/repo-snapshots"
   val scalaz = "org.scalaz" %% "scalaz-core" % "6.0-SNAPSHOT"
@@ -29,7 +31,7 @@ with Eclipsify {
     
   // scalasignal and mocaputils
   val scalaSignal = "GitHub" %% "scalasignal" % "0.3-SNAPSHOT"
-  val mocapUtils = "MEPC" %% "motion-capture-utilities" % "0.2-SNAPSHOT"
+  val mocapUtils = "MEPC" %% "mocaputils" % "0.2-SNAPSHOT"
   
   // enable unchecked warnings
   //override def compileOptions = super.compileOptions ++ Seq(Unchecked)
