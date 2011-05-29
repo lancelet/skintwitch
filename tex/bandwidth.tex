@@ -97,7 +97,7 @@ Marker data were obtained from Motion Analysis software in the form of \texttt{t
 
 \section{Power Spectral Density (PSD) Calculation}
 
-The de-trended coordinate data were padded with zeros to reach the length of the next largest power of two (it was a requirement of the Fast Fourier Transformation algorithm that the data length must be equal to a power of two).  They were processed using a Fast Fourier Transformation (FFT) to obtain a frequency domain representation.  Let $i$ be the sample number: $i = 0, \ldots, N-1$, where $N$ was the number of samples in the zero-padded signal.  Let $q_{ij}$ represent the $i$th sample from component $j$
+The de-trended data were processed using a Fast Fourier Transformation (FFT) to obtain a frequency domain representation.  Let $i$ be the sample number: $i = 0, \ldots, N-1$, where $N$ was the number of samples.  Let $q_{ij}$ represent the $i$th sample from component $j$
 \begin{equation}
 q_{ij} = \begin{cases}
 x_i & j=0, \\
@@ -110,24 +110,32 @@ The component-wise frequency-domain representation of each markers, $H_{kj}$, fo
 H_{kj} = \sum_{n=0}^{N-1} q_{nj} e^{(2\pi i/N)kn} \hspace{3em} k = 0, \ldots, N-1, \hspace{1em} j = 0, 1, 2.
 \label{eq:dft}
 \end{equation}
-Each complex-valued $H_{kj}$ represented the magnitude and phase of a discrete sinusoidal frequency component.  Since $q_{ij} \in \mathbb{R}$, the $H_{kj}$ values were symmetric about their central component ($k = N/2$).  The frequencies, $f_{kj}$, which corresponded to each $H_{kj}$ were given by
+Each complex-valued $H_{kj}$ represented the magnitude and phase of a discrete sinusoidal frequency component.  Since $q_{ij} \in \mathbb{R}$, the $H_{kj}$ values were symmetric about their central component ($k = N/2$), with $H_{kj}$ for $k > N/2$ being the complex conjugate pairs of the $H_{kj}$ for $k < N/2$.  The total number of unique frequency components recovered, $M$, depended upon whether $N$ was odd or even
 \begin{equation}
-f_{kj} = \frac{f_s k}{N} \hspace{3em} k = 0, \ldots, \frac{N}{2}
+M = 
+\begin{cases}
+N/2 & \text{for even $N$,} \\
+(N + 1)/2 & \text{for odd $N$.}
+\end{cases}
+\end{equation}
+The frequencies, $f_{kj}$, which corresponded to each $H_{kj}$ were given by
+\begin{equation}
+f_{kj} = \frac{f_s k}{N} \hspace{3em} k = 0, \ldots, M.
 \end{equation}
 where $f_s$ was the sampling frequency.  The signal power, $P_{kj}$, at each frequency was then found from
 \begin{equation}
 P_{kj} = \begin{cases}
-\left(\left| H_{kj} \right| / M \right)^2 & \text{if $k=0$ or $k=\frac{N}{2}$},\\
-2\left(\left| H_{kj} \right| / M \right)^2 & \text{otherwise.}
-\end{cases} \hspace{3em} k = 0,\ldots,\frac{N}{2}
+\left(\left| H_{kj} \right| / N \right)^2 & \text{if $k=0$ or $k=N/2$},\\
+2\left(\left| H_{kj} \right| / N \right)^2 & \text{otherwise.}
+\end{cases}
 \end{equation}
-where $M$ was the number of samples in the original (non-zero-padded) coordinate.  The Nyquist ($k=N/2$) and constant ($k=0$) components were unique for the range $k=0,\ldots,N-1$, while the other components had complex-conjugate pairs that had to be accounted for in the range $k=N/2+1,\ldots,N-1$.  The set of values $\left\{ P_{kj} \right\}$ comprised the power spectral density estimate for the signal.
+Due to the FFT algorithm, the Nyquist frequency ($k=N/2$) was only present for even values of $N$. The Nyquist ($k=N/2$) and constant ($k=0$) components were unique for the entire range of $k$ ($k=0,\ldots,N-1$).  The other components had complex-conjugate pairs that had to be accounted for in the range $k=M,\ldots,N-1$, and were therefore multiplied by two.  The set of values $\left\{ P_{kj} \right\}$ comprised the power spectral density estimate for the signal.
 
 \section{Marker Bandwidth}
 
 The ``bandwidth'' of the marker coordinate data was estimated.  First, the total power in the signal for each component, $P_j$, was found by summing the signal power over all frequencies
 \begin{equation}
-P_j = \sum_{k=0}^{N/2} P_{kj} \hspace{3em} j = 0, 1, 2
+P_j = \sum_{k=0}^{M} P_{kj} \hspace{3em} j = 0, 1, 2
 \end{equation}
 Then, the smallest index, $b_j$, was sought which satisfied the relationship
 \begin{equation}
