@@ -29,6 +29,8 @@ import mocaputils.plotting.TimeSampledSeries
 import org.jfree.chart.plot.DatasetRenderingOrder
 import java.io.Writer
 import mocaputils.GappedMarker
+import org.jfree.ui.Layer
+import org.jfree.chart.plot.IntervalMarker
 
 /** Bandwidth Analysis of Trials
  * 
@@ -79,7 +81,7 @@ class BandwidthAnalysis extends Logged {
       e => log("Could not read file; message: %s" format e),
       s => {
         val trialName = (new File(fileName)).getName.dropRight(4)
-        writer.write("\\section{Trial %s}\n" format sTeX(trialName))
+        writer.write("\\section{Trial \\texttt{%s}}\n" format sTeX(trialName))
         writer.write("The trial data file name was ``\\texttt{%s.trc}''.\n". 
             format (sTeX(trialName)))
         writer.write("Marker positions were collected at a " +
@@ -109,7 +111,26 @@ class BandwidthAnalysis extends Logged {
         plotFilteredComparison(bm90._1, bm90._2, trialName)
         
         // export image links
-        saveImageLinks(writer, trialName, bm90._2 * 8, bm90._1)      
+        saveImageLinks(writer, trialName, bm90._2 * 8, bm90._1)
+        
+        // identify discontinuities and save plots for them
+        val discontThreshold = 5.0
+        val discontMap = Map.empty[Marker, Seq[(Int, Int)]] ++
+          filledMarkers.map(m => (m, m.discontinuities(discontThreshold)))
+        for (m <- filledMarkers) {
+          val discont = discontMap(m)
+          if (!discont.isEmpty) {
+            val mg = s.markers.find(_.name == m.name).get
+            plotDiscont(m, mg, trialName, writer, discontThreshold)
+          }
+        }
+        
+        // save table of discontinuities
+        if (!discontMap.isEmpty) {
+          saveDiscontTable(filledMarkers, writer, trialName,
+            discontThreshold)
+        }
+        
       }
     )
   }
@@ -118,13 +139,14 @@ class BandwidthAnalysis extends Logged {
 
   private def saveImageLinks(w: Writer, trialName: String, Fc: Double,
       marker: Marker) {
-    val psdShort = "PSD for %s.".format(sTeX(trialName))
-    val psdCaption = ("Power spectral density plot for trial %s, "
-      + "90th percentile marker %s.").
+    val psdShort = "PSD for \\texttt{%s}.".format(sTeX(trialName))
+    val psdCaption = ("Power spectral density plot for trial \\texttt{%s}, "
+      + "90th percentile marker \\texttt{%s}.").
       format(sTeX(trialName), marker.name)
-    val filteredShort = "Filtered coordinates for %s.".format(sTeX(trialName))
+    val filteredShort = "Filtered coordinates for \\texttt{%s}.".
+      format(sTeX(trialName))
     val filteredCaption = "Marker coordinates (relative to the mean) " +
-      "of 90th percentile marker %s, ".format(marker.name) +
+      "of 90th percentile marker \\texttt{%s}, ".format(marker.name) +
       "filtered using a 2nd order forward-reverse low-pass " +
       "Butterworth filter, with a cutoff frequency of " +
       "$F_c=%.1f\\,\\mathrm{Hz}$.".format(Fc)
@@ -151,10 +173,10 @@ class BandwidthAnalysis extends Logged {
     def bws(b: (Marker, Double)) = "%s&%.1f" format (b._1.name, b._2)
     val bw = bandwidths.grouped(nPerCol).map(_.map(bws(_))).
       map(_.padTo(nPerCol, "")).toList.transpose
-    val caption = "Marker bandwidth (90\\%% signal power) for trial %s.".
-      format(sTeX(trialName))
-    val scap = "Bandwidth for %s." format(sTeX(trialName))
-      
+    val caption = "Marker bandwidth (90\\% signal power) for trial " +
+      "\\texttt{%s}.".format(sTeX(trialName))
+    val scap = "Bandwidth for \\texttt{%s}." format(sTeX(trialName))
+    
     w.write("\\begin{longtable}{%s}\n" format ("lr" * nCols))
     w.write("\\toprule\n")
     val mg = List("\\textbf{Marker}", "\\textbf{Bandwidth (Hz)}")
@@ -174,8 +196,8 @@ class BandwidthAnalysis extends Logged {
   private def saveGapTable(w: Writer, markers: Seq[GappedMarker], 
     trialName: String) {
     if (markers.exists(!_.gaps.isEmpty)) {
-      val caption = "Gaps for trial %s.".format(sTeX(trialName))
-      val scap = "Gaps for %s.".format(sTeX(trialName))
+      val caption = "Gaps for trial \\texttt{%s}.".format(sTeX(trialName))
+      val scap = "Gaps for \\texttt{%s}.".format(sTeX(trialName))
         
       w.write("\\begin{longtable}{lp{8.5cm}}\n")
       w.write("\\toprule\n")
@@ -250,6 +272,88 @@ class BandwidthAnalysis extends Logged {
     PlotToPDF.save(new File("%s/plots/%s_filtered.pdf".
         format(outDir, trialName)), chart, 250, 125)
   }
+  
+  /** Plots a marker with potential discontinuities, and includes
+   *  plots in TeX file. */
+  private def plotDiscont(m: Marker, mg: GappedMarker, trialName: String,
+    texWriter: Writer, threshold: Double) = 
+  {
+    require(m.name == mg.name)
+    val fname = "./output/plots/%s_%s_discont.pdf" format(trialName, m.name)
+    val dataset = new XYDataset with StaticDataset {
+      val series = Vector(
+        TimeSampledSeries("x", m.xs.map(_ - m.xs.sum / m.xs.length)),
+        TimeSampledSeries("y", m.ys.map(_ - m.ys.sum / m.ys.length)),
+        TimeSampledSeries("z", m.zs.map(_ - m.zs.sum / m.zs.length)))
+    }
+    val dotRenderer = new XYShapeRenderer {
+      setDrawOutlines(false)
+      val seriesShape = new Ellipse2D.Double(-1, -1, 2, 2)
+      setSeriesShape(0, seriesShape)
+      setSeriesShape(1, seriesShape)
+      setSeriesShape(2, seriesShape)
+      setSeriesPaint(0, lxColor)
+      setSeriesPaint(1, lyColor)
+      setSeriesPaint(2, lzColor)
+    }
+    // create and save the chart
+    val chart = ChartFactory.createXYLineChart(
+      "", "Sample", "Position - Deviation from Mean (mm)", dataset,
+      PlotOrientation.VERTICAL, true, true, false)
+    val xyplot = chart.getPlot.asInstanceOf[XYPlot]
+    xyplot.setRenderer(0, dotRenderer)
+    val discont = m.discontinuities(threshold)
+    for ((x1, x2) <- discont) {
+      val ivm = new IntervalMarker(x1, x2) {
+        setPaint(new Color(1, 0, 0, 0.5f))
+        setOutlinePaint(new Color(1, 0, 0, 0.75f))
+      }
+      xyplot.addDomainMarker(ivm, Layer.BACKGROUND)
+    }
+    WhiteChartTheme(chart)
+    chart.getLegend.setPosition(RectangleEdge.RIGHT)
+    PlotToPDF.save(new File(fname), chart, 250, 125)
+    
+    // include the chart in the TeX document
+    val caption = "Identified discontinuities for marker " +
+      "\\texttt{%s} ".format(m.name) +
+      "in trial \\texttt{%s} ".format(sTeX(trialName)) +
+      "(threshold %.1f\\,mm).".format(threshold)
+    val shortCap = "Discontinuities; marker \\texttt{%s}, trial \\texttt{%s}.".
+      format(m.name, sTeX(trialName))
+    texWriter.write("\\begin{figure}[H]\n")
+    texWriter.write("\\includegraphics[width=\\columnwidth]" +
+      "{.%s}\n".format(fname))
+    texWriter.write("\\caption[%s]{%s}\n".format(shortCap, caption))
+    texWriter.write("\\end{figure}\n")
+  }
+
+  private def saveDiscontTable(markers: Seq[Marker], texWriter: Writer,
+    trialName: String, threshold: Double) { 
+    // include table in TeX document
+    val tblCaption = "Discontinuities for trial " +
+      "\\texttt{%s} ".format(sTeX(trialName)) +
+      "(threshold %.1f\\,mm).".format(threshold)
+    texWriter.write("\\begin{longtable}{lp{8.5cm}}\n")
+    texWriter.write("\\toprule\n")
+    texWriter.write("\\textbf{Marker} & " +
+      "\\textbf{Discontinuities (sample, sample)}\\\\\n")
+    texWriter.write("\\midrule\\endhead\n")
+    texWriter.write("\\bottomrule\\caption[]{" + tblCaption +
+      "\\\\(Continued on next page\\ldots)}\\endfoot\n")
+    texWriter.write("\\bottomrule\\caption[" + tblCaption + "]{" + 
+      tblCaption + "}\\endlastfoot\n")
+    for (m <- markers) {
+      val discont = m.discontinuities(threshold)
+      if (!discont.isEmpty) {
+          val disString = (for (g <- discont) yield "(%d, %d)".
+            format(g._1, g._2)).reduce(_ + " " + _)
+        texWriter.write("%s & %s\\\\\n" format(m.name, disString))        
+      }
+    }
+    texWriter.write("\\end{longtable}\n")
+  }
+  
   
   /** Plots power spectral distribution of a given marker. */
   private def plotPSD(m: Marker, bandwidth: Double, trialName: String) = {
