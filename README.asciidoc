@@ -6,8 +6,10 @@ This is the cutaneous trunci skin twitch project.
 
 == Current Status ==
 
+Completed:
+  - Power spectral analysis of initial trials.
 Working on:
-  - Power spectral analysis of 500 Hz marker data.
+  - Computing the skin deformation gradient tensor.
   
 == Installation ==
 
