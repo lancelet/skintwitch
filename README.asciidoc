@@ -19,15 +19,25 @@ repository):
   $ git clone git://github.com/lancelet/skintwitch.git
 
 This will create a new directory called `skintwitch`.  Next, use
-http://code.google.com/p/simple-build-tool/[sbt] to compile the project:
+https://github.com/harrah/xsbt[sbt/xsbt] to compile the project:
 
   $ cd skintwitch
   $ sbt
 
-http://code.google.com/p/simple-build-tool/[sbt] will launch, and collect
+https://github.com/harrah/xsbt[sbt/xsbt] will launch, and collect
 everything it needs for the project.  Within `sbt`, you can then run:
 
-  > update
   > test
 
 This will run the packaged unit tests for the project.
+
+== NOTE: Problems with netlib-java-0.9.3.pom ==
+
+If you encounter sha1 hash conflicts when fetching `netlib-java-0.9.0.pom` from
+repo.scalanlp.org, a workaround is to checkout
+https://github.com/scalala/Scalala[Scalala] from GitHub, and then run
+
+  $ sbt update
+ 
+It will then pull `netlib-java` into the Ivy cache, and sbt/xsbt will happily
+use the cache version.

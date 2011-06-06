@@ -11,7 +11,7 @@ class DGTriAnalysis extends Logged {
   log("+---------------+")
   
   // load an arbitrary file at this stage
-  val trcData = TRCReader.read("./data/Horse1_trials30j.trc").fold(
+  val trcData = TRCReader.read("./data/Horse4_trials11.trc").fold(
     e => {
       log("Could not read TRC file!")
       sys.exit(-1)
@@ -20,6 +20,7 @@ class DGTriAnalysis extends Logged {
   )
   
   // convert trc data to a MarkerGrid
+  log("Frame rate = %f" format trcData.cameraRate)
   val markerGrid = MarkerGrid.fromTRC(trcData, 5)
   log("Constructed marker grid.")
   log("numRows = %d" format markerGrid.numRows)
