@@ -5,6 +5,8 @@ trait DGTensorGrid {
   val numRows: Int
   val numCols: Int
   
+  val markerGrid: MarkerGrid
+  
   def apply(i: Int, j: Int, s0: Int, s1: Int): DGTensor
   
 }
@@ -15,6 +17,7 @@ object DGTensorGrid {
     new DGTensorGrid {
       val numRows = g.numRows
       val numCols = g.numCols
+      val markerGrid = g
       def apply(i: Int, j: Int, s0: Int, s1: Int): DGTensor = {
         require(i >= 0 && i < numCols)
         require(j >= 0 && j < numRows)

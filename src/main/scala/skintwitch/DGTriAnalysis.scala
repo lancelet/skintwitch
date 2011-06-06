@@ -20,7 +20,7 @@ class DGTriAnalysis extends Logged {
   )
   
   // convert trc data to a MarkerGrid
-  val markerGrid = MarkerGrid.fromTRC(trcData)
+  val markerGrid = MarkerGrid.fromTRC(trcData, 5)
   log("Constructed marker grid.")
   log("numRows = %d" format markerGrid.numRows)
   log("numCols = %d" format markerGrid.numCols)
@@ -33,7 +33,7 @@ class DGTriAnalysis extends Logged {
   val renderer = DGTensorGridRenderer(dgrid)
   for (frame <- 0 until trcData.numFrames) {
     log("computing frame %d of %d" format (frame, trcData.numFrames-1))
-    val fname = "./output/tensors/%5d.png" format frame
+    val fname = "./output/tensors/%05d.png" format frame
     renderer.saveToPNG(fname, 50, 0, frame)
   }
   

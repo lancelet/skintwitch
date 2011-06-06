@@ -2,6 +2,9 @@ package skintwitch
 
 import scala.collection.immutable._
 import mocaputils.{ GapFiller, Marker, TRCData }
+import scalala.library.Library._
+import scalala.library.LinearAlgebra._
+import scalala.tensor.dense._
 
 trait MarkerGrid { self =>
   
@@ -35,19 +38,47 @@ trait MarkerGrid { self =>
     validq.map(q => (q(0).marker, q(1).marker, q(2).marker))
   }
   
+  private implicit def tupleToDenseVector(x: (Double, Double, Double)) =
+    DenseVectorCol(x._1, x._2, x._3)  
+  
+  def iVec(i: Int, j: Int, s: Int): DenseVector[Double] = {
+    if (i < numCols - 1) {
+      normalize(apply(i + 1, j).co(s) - apply(i, j).co(s), 2)
+    } else {
+      normalize(apply(numCols - 1, j).co(s) - apply(numCols - 2, j).co(s), 2)
+    }
+  }
+  
+  def jVec(i: Int, j: Int, s: Int): DenseVector[Double] = {
+    if (j < numRows - 1) {
+      normalize(apply(i, j + 1).co(s) - apply(i, j).co(s), 2)
+    } else {
+      normalize(apply(i, numRows - 1).co(s) - apply(i, numRows - 2).co(s), 2)
+    }
+  }
+  
+  def orthoRot(i: Int, j: Int, s: Int): DenseMatrix[Double] = {
+    val e1 = iVec(i, j, s)
+    val e3 = normalize(cross(e1, jVec(i, j, s)), 2)
+    val e2 = -normalize(cross(e1, e3), 2)
+    DenseMatrix(e1.toArray, e2.toArray, e3.toArray)
+  }
+  
 }
 
 object MarkerGrid {
   
-  def fromTRC(trc: TRCData): MarkerGrid = {
+  def fromTRC(trc: TRCData, fc: Double): MarkerGrid = {
     
-    // find markers which match the pattern CxRy, and put them in Mcr objects
+    // find markers which match the pattern CxRy, and put them in Mcr objects,
+    //  and low-pass filter them
     case class Mcr(c: Int, r: Int, m: Marker)
     val crMarkers = (for (m <- trc.markers) yield {
       val ColRowMarker = """C(\d+)R(\d+)""".r
       m.name match {
         case ColRowMarker(col, row) => 
-          Some(Mcr(col.toInt, row.toInt, GapFiller.fillGapsLerp(m).get))
+          Some(Mcr(col.toInt, row.toInt, 
+                   GapFiller.fillGapsLerp(m).get.butter2(fc)))
         case _ => None
       }
     }).filter(_.isDefined).map(_.get)

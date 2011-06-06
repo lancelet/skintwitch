@@ -1,12 +1,13 @@
 package skintwitch
 
-import java.awt.{ Color, Graphics2D, RenderingHints }
-import java.awt.geom.Ellipse2D
+import java.awt.{ BasicStroke, Color, Graphics2D, RenderingHints }
+import java.awt.geom.{ Ellipse2D, Line2D }
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
 import scalala.library.Library._
 import scalala.operators.Implicits._
+import scalala.tensor.dense._
 
 case class DGTensorGridRenderer(grid: DGTensorGrid) {
 
@@ -40,17 +41,42 @@ case class DGTensorGridRenderer(grid: DGTensorGrid) {
     }
     
     // render the tensor principal directions and stretches
-    val scale = 2000.0
+    val scale = 500.0
     for (i <- 0 until grid.numCols; x = locx(i)) {
       for (j <- 0 until grid.numRows; y = locy(j)) {
-        val dg = grid(i, j, s0, s1)
+        // rotate deformation gradient tensor into the grid coordinate system
+        val dg = new DGTensor {
+          val f = grid(i, j, s0, s1)  // deformation gradient tensor
+          val c = f.t * f  // right Cauchy-Green deformation tensor
+          val e = (c - DenseMatrix.eye[Double](3)) * 0.5 // Green-Lagrangian strain
+          val r = grid.markerGrid.orthoRot(i, j, s0)
+          val back = r * e * r.t
+          def apply(ii: Int, jj: Int) = back(ii, jj)
+        }
         for ((stretch, dir) <- dg.prin) {
-          val strain = stretch - 1
+          //val strain = stretch - 1
+          val strain = stretch // temporarily using Green-Lagrangian strain
+          val xprinu = dir(0)
+          val yprinu = dir(1)
+          val xp = xprinu * scale * strain / 2
+          val yp = yprinu * scale * strain / 2
+          if (strain < 0) {
+            g.setColor(new Color(1.0f, 0.3f, 0.3f))
+          } else {
+            g.setColor(new Color(0.3f, 0.3f, 1.0f))
+          }
+          g.setStroke(new BasicStroke(2))
+          g.draw(new Line2D.Double(x + xp, y + yp, x - xp, y - yp))
           // TODO: Project directions to 2D
-          g.setColor(new Color(1.0f, 0.3f, 0.3f, 0.33f))
+          if (strain < 0) {
+            g.setColor(new Color(1.0f, 0.3f, 0.3f, 0.15f))
+          } else {
+            g.setColor(new Color(0.3f, 0.3f, 1.0f, 0.15f))
+          }
+          val as = math.abs(strain)
           g.fill(new Ellipse2D.Double(
-            x - scale / 2 * strain, y - scale / 2 * strain,
-            scale * strain, scale * strain))
+            x - scale / 2 * as, y - scale / 2 * as,
+            scale * as, scale * as))
         }
       }
     }
