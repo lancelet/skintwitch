@@ -19,6 +19,8 @@ class DGTriAnalysis extends Logged {
     s => s
   )
   
+  /*
+  
   // convert trc data to a MarkerGrid
   log("Frame rate = %f" format trcData.cameraRate)
   val markerGrid = MarkerGrid.fromTRC(trcData, 5)
@@ -37,6 +39,8 @@ class DGTriAnalysis extends Logged {
     val fname = "./output/tensors/%05d.png" format frame
     renderer.saveToPNG(fname, 50, 0, frame)
   }
+  
+  */
   
 }
 
