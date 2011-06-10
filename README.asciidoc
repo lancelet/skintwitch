@@ -7,9 +7,14 @@ This is the cutaneous trunci skin twitch project.
 == Current Status ==
 
 Completed:
+
   - Power spectral analysis of initial trials.
+  - Computing skin deformation gradient tensor from a marker grid.
+  
 Working on:
-  - Computing the skin deformation gradient tensor.
+
+  - 3D visualization (using the VTK library).
+  - Computing sample-by-sample tensor changes.
   
 == Installation ==
 
