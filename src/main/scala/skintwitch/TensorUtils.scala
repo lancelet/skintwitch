@@ -2,7 +2,7 @@ package skintwitch
 
 import scala.collection.immutable._
 import scalala.library.Library.normalize
-import scalala.library.LinearAlgebra.{ cross, eig }
+import scalala.library.LinearAlgebra.{ cross, eig, svd }
 import scalala.scalar.Complex
 import scalala.tensor.{ ::, Matrix }
 import scalala.tensor.dense.{ DenseMatrix, DenseVector }
@@ -32,7 +32,23 @@ object TensorUtils {
     (ev zip vs).filter(x => x._1.imag < cThreshold).
       map(x => (x._1.real, x._2)).toList
   }
-  
+
+  /** Polar decomposition: `m = r * u`.
+   * 
+   *  Performs a polar decomposition of matrix `m` into an orthonormal matrix
+   *  `r` and a positive definite symmetric tensor, `u`.
+   *  
+   *  @param m matrix on which to perform the polar decomposition
+   *  @return `(r, u)` */
+  def polarDecomp(m: Matrix[Double]): (Matrix[Double], Matrix[Double]) = {
+    require(m.numRows == 3 && m.numCols == 3)
+    val (w, sdiag, vp) = svd(DenseMatrix.horzcat(m))
+    val r = w * vp
+    val s = DenseMatrix.tabulate(3, 3)((r: Int, c: Int) => 
+      if (r != c) 0.0 else sdiag(r))
+    val u = vp.t * s * vp
+    (r, u)
+  }
 
   /** Computes surface deformation gradient tensor from triads of markers in
    *  un-deformed and deformed configurations of a surface.
@@ -116,7 +132,7 @@ object TensorUtils {
     val x2 = c * (DenseMatrix(q.toArray).t)
     val X1 = C * (DenseMatrix(P.toArray).t)
     val X2 = C * (DenseMatrix(Q.toArray).t)
-    
+        
     // compute F, the deformation gradient tensor
     val eye2 = DenseMatrix.eye[Double](2)
     val x1x23 = DenseMatrix.horzcat(x1, x2)
