@@ -17,7 +17,9 @@ object Resolvers {
     "http://scala-tools.org/repo-snapshots"
   val ondex = "Ondex" at
     "http://ondex.rothamsted.bbsrc.ac.uk/nexus/content/groups/public"
-  val allResolvers = Seq(scalaToolsSnapshots, ondex)
+  val migLayout = "MigLayout" at
+    "http://www.miglayout.com/mavensite/"
+  val allResolvers = Seq(scalaToolsSnapshots, ondex, migLayout)
 }
 
 object Dependencies {
@@ -27,8 +29,9 @@ object Dependencies {
   val jFreechart  = "jfree" % "jfreechart" % "1.0.13"
   val xmlGraphics = "org.apache.xmlgraphics" % "xmlgraphics-commons" % "1.3.1"
   val iText       = "com.lowagie" % "itext" % "2.1.5" intransitive()
+  val migLayout   = "com.miglayout" % "miglayout" % "3.7.4" classifier "swing"
   val allDependencies = Seq(
-    scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText
+    scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText, migLayout
   )
 }
 
@@ -37,10 +40,13 @@ object SkinTwitchBuild extends Build {
   import Dependencies._
   import BuildSettings._
 
+  val vtkNativePath = "-Djava.library.path=./lib/vtk-native-5.6.1-osx-x86_64"
   lazy val skintwitch = Project("skintwitch", file("."), 
 				settings = buildSettings ++ Seq(
 				  libraryDependencies := allDependencies,
-				  resolvers := allResolvers
+				  resolvers := allResolvers,
+				  fork in run := true,
+				  javaOptions in run += vtkNativePath
 				)) dependsOn(scalaSignal, mocaputils)
   val scalaSignalUri = uri("git://github.com/lancelet/scalasignal.git")
   lazy val scalaSignal = RootProject(scalaSignalUri)
