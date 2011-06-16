@@ -35,10 +35,10 @@ object TensorUtils {
 
   /** Polar decomposition: `m = r * u`.
    * 
-   *  Performs a polar decomposition of matrix `m` into an orthonormal matrix
+   *  Performs a polar decomposition of tensor `m` into an orthonormal matrix
    *  `r` and a positive definite symmetric tensor, `u`.
    *  
-   *  @param m matrix on which to perform the polar decomposition
+   *  @param m tensor matrix on which to perform the polar decomposition
    *  @return `(r, u)` */
   def polarDecomp(m: Matrix[Double]): (Matrix[Double], Matrix[Double]) = {
     require(m.numRows == 3 && m.numCols == 3)
@@ -148,6 +148,14 @@ object TensorUtils {
     } else {
       C.t * F * C
     }
-  }  
+  }
+  
+  /** Compute the mean of a sequence of matrices.
+   * 
+   *  @param mats sequence of matrices
+   *  @return the mean of the sequence of matrices */
+  def mean(mats: Seq[Matrix[Double]]): Matrix[Double] = {
+    mats.reduce(_ + _) / mats.length.toDouble
+  }
   
 }

@@ -47,9 +47,11 @@ object SkinTwitchBuild extends Build {
 				  resolvers := allResolvers,
 				  fork in run := true,
 				  javaOptions in run += vtkNativePath
-				)) dependsOn(scalaSignal, mocaputils)
+				)) dependsOn(scalaSignal, mocaputils, scalari)
   val scalaSignalUri = uri("git://github.com/lancelet/scalasignal.git")
   lazy val scalaSignal = RootProject(scalaSignalUri)
   val mocaputilsUri = uri("git://github.com/lancelet/mocaputils.git")
   lazy val mocaputils = RootProject(mocaputilsUri)
+  val scalariUri = uri("git://github.com/lancelet/scalari.git")
+  lazy val scalari = RootProject(scalariUri)
 }
