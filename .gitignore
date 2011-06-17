@@ -22,3 +22,4 @@ output
 *.synctex.gz
 *.toc
 project/boot
+render

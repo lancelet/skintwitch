@@ -137,6 +137,15 @@ class VtkStrainViz {
     }
   }
   
+  // action to render the entire animation using Aqsis
+  private val renderAllAction = new
+  Action("Render animation using Aqsis") {
+    def apply() {
+      val camera = vtkPanel.GetRenderer.GetActiveCamera
+      RManRender.renderAnim(grid, camera)
+    }
+  }
+  
   // menu bar
   private val topMenuBar = new MenuBar {
     contents += new Menu("File") {
@@ -144,6 +153,7 @@ class VtkStrainViz {
     }
     contents += new Menu("Render") {
       contents += new MenuItem(renderFrameAction)
+      contents += new MenuItem(renderAllAction)
     }
   }
   

@@ -1,10 +1,13 @@
 package skintwitch.rman
 
+import scala.collection.immutable._
 import ri._
 import skintwitch.MarkerGrid
 import simplex3d.math.double._
 import simplex3d.math.double.functions._
 import vtk.vtkCamera
+import scalala.tensor.Matrix
+import scalala.tensor.dense.DenseMatrix
 
 object RManRender {
 
@@ -61,6 +64,21 @@ object RManRender {
     }
   }
   
+  def evalPatch(u: Double, v: Double, 
+    basis: Matrix[Double], P: Matrix[Double]): (Double, Double, Double) = {
+    val U = DenseMatrix(Array(u*u*u, u*u, u, 1))
+    val V = DenseMatrix(Array(v*v*v, v*v, v, 1))
+    val r = (U * basis * P * basis.t * V.t).data
+    (r(0), r(1), r(2))
+  }
+
+  def renderAnim(grid: MarkerGrid, camera: vtkCamera) {
+    val nFrames = grid(0, 0).co.length
+    for (frame <- 0 until nFrames by 4) {
+      renderFrame(frame, grid, camera)
+    }
+  }
+  
   def renderFrame(frame: Int, grid: MarkerGrid, camera: vtkCamera) {
     val riFunctions = new Ri()
     import riFunctions._
@@ -68,13 +86,14 @@ object RManRender {
       
       Option("limits", "bucketsize", Seq(64, 64))
       Format(1280, 720, 1)
-      PixelSamples(2, 2)
-      PixelFilter(GaussianFilter, 2, 2)
+      PixelSamples(4, 4)
+      PixelFilter(MitchellFilter, 1.11, 1.11)
 
       exportCamera(getContext(), camera)
       
       FrameBlock(1) {
-        Display("+test.tif", DisplayFrameBuffer, DisplayRGB)
+        Display("render/%05d.tif" format frame, DisplayFile, DisplayRGB)
+        Display("+%05d.tif" format frame, DisplayFrameBuffer, DisplayRGB)
         Sides(1)
         
         WorldBlock {
@@ -87,6 +106,21 @@ object RManRender {
             Translate(x, y, z)
             Scale(10, 10, 10)
             Sphere(1, -1, 1, 360)
+          }
+          
+          val p = (for {
+            r <- Seq(Seq(0), 0 until grid.numRows, Seq(grid.numRows-1)).flatten
+            c <- Seq(Seq(0), 0 until grid.numCols, Seq(grid.numCols-1)).flatten
+            (x, y, z) = grid(r, c).co(frame)
+          } yield {
+            Seq(x, y, z)
+          }).flatten
+          AttributeBlock {
+            ReverseOrientation
+            Basis(CatmullRomBasis, 1, CatmullRomBasis, 1)
+            PatchMesh(Bicubic, 
+              grid.numCols+2, NonPeriodic, grid.numRows+2, NonPeriodic,
+              "P", p)
           }
           
         }
