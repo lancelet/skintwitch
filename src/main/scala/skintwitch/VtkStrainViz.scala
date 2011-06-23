@@ -14,7 +14,7 @@ import _root_.vtk.{ vtkRenderWindowPanel, vtkInteractorStyleTrackballCamera }
 import mocaputils.{ GapFiller, TRCReader }
 import skintwitch.vtk.{ AnimatedActor, BiotGradActor, MarkerGridActor,
   PetersBiotGradActor}
-import skintwitch.rman.RManRender
+import skintwitch.rman.{ RManRender, RenderOptions }
 import simplex3d.math.double.Mat4
 import net.liftweb.json.{ DefaultFormats, parse }
 import net.liftweb.json.Serialization.write
@@ -151,6 +151,15 @@ class VtkStrainViz {
     }
   }
   
+  // action to export render options
+  private val exportRenderOptions = new Action("Export render options...") {
+    def apply() {
+      val camera = vtkPanel.GetRenderer.GetActiveCamera
+      val trialName = canonicalTrialName
+      RenderOptions.getRenderOptionsFromDialogAndSave(camera, trialName)
+    }
+  }
+  
   /** Saves camera parameters to a JSON file. */
   private val saveCameraParams = new Action("Save camera parameters...") {
     def apply() {
@@ -217,6 +226,7 @@ class VtkStrainViz {
     contents += new Menu("Render") {
       contents += new MenuItem(renderFrameAction)
       contents += new MenuItem(renderAllAction)
+      contents += new MenuItem(exportRenderOptions)
     }
   }
   
@@ -245,6 +255,7 @@ class VtkStrainViz {
   /** Opens a TRC file. */
   private var grid: MarkerGrid = null
   private var trialName: String = null
+  private var canonicalTrialName: String = null
   private def openTrcFile(fileName: String) {
     val trcData = TRCReader.read(fileName).fold (
       e => {
@@ -254,6 +265,7 @@ class VtkStrainViz {
       s => s
     )
     
+    canonicalTrialName = new File(fileName).getCanonicalPath
     trialName = new File(fileName).getName.dropRight(4)
     mainFrame.title = "VtkStrainViz - %s" format trialName
     
