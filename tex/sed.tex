@@ -1,0 +1,95 @@
+\documentclass[
+  a4paper,
+  11pt,
+  twoside,
+  toc=flat,
+  listof=flat
+]{scrbook}
+
+% page geometry and margins
+\usepackage[
+  paper=a4paper,
+  tmargin=3cm,
+  bmargin=3cm,
+  lmargin=3.2cm,
+  rmargin=3cm,
+  footskip=2cm,
+  includeheadfoot
+]{geometry}
+
+% fancy headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\setlength\headheight{15pt}
+\fancyhf{}
+\fancyhead[RO,LE]{\textsf{\nouppercase{\leftmark}}}
+\fancyfoot[C]{\thepage}
+
+% 1.5 line spacing
+\usepackage{setspace}
+\onehalfspacing
+
+% remove paragraph indent, but use space between paragraphs instead
+\setlength{\parindent}{0mm}
+\setlength{\parskip}{1em plus 0.5em minus 0.5em}
+
+% fancy chapter headings
+\usepackage[Sonny]{fncychap}
+
+% graphics
+\usepackage{subfig}
+\usepackage{graphicx}
+
+% float placement (allow the H option)
+\usepackage{float}
+
+% cmbright fonts
+\usepackage{cmbright}
+
+% amsmath
+\usepackage{amssymb}
+\usepackage{amsmath}
+
+% captions
+\usepackage{caption}
+\DeclareCaptionStyle{small}{
+  labelfont={sf,bf,footnotesize},
+  textfont={sf,footnotesize},
+  justification={centering},
+  aboveskip={2pt}
+}
+
+% hyperlinks within the PDF document
+\usepackage{xcolor}
+\usepackage[
+  linkbordercolor=white,
+  colorlinks=true,
+  linkcolor=blue
+]{hyperref}
+
+% tabular material
+\usepackage{color}
+\usepackage{colortbl}
+\usepackage{booktabs}
+\usepackage{longtable}
+
+% --- THE DOCUMENT ---
+\begin{document}
+
+% title page
+\title{Strain Energy Density in Cutaneous Trunci Skin Twitch Experiment}
+\author{Jonathan Merritt}
+\begin{titlepage}
+  \maketitle
+\end{titlepage}
+
+% table of contents
+\tableofcontents
+\listoftables
+\listoffigures
+
+\chapter{Trial Data}
+
+\input{../output/tex/sed.tex}
+
+\end{document}

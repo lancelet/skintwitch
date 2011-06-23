@@ -39,9 +39,9 @@ import org.jfree.chart.plot.IntervalMarker
 class BandwidthAnalysis extends Logged {
 
   // banner
-  log("+--------------------+")
-  log("| Bandwidth Analysis |")
-  log("+--------------------+")  
+  log("+--------------------------------------------------+")
+  log("| Bandwidth Analysis / Strain Energy Density Plots |")
+  log("+--------------------------------------------------+")  
   
   // plotting colors
   val xColor = new Color(0.5f, 0.0f, 0.0f)
@@ -73,6 +73,7 @@ class BandwidthAnalysis extends Logged {
   // output directory and file
   val outDir = "./output"
   val writer = new FileWriter("%s/tex/bandwidth.tex" format outDir)
+  val sedWriter = new FileWriter("%s/tex/sed.tex" format outDir)
   
   // process each file
   for (fileName <- dataFileNames) {
@@ -131,12 +132,51 @@ class BandwidthAnalysis extends Logged {
             discontThreshold)
         }
         
+        // save strain energy density vs time plot
+        plotSEDvsTime(filledMarkers, sedWriter, trialName)
       }
     )
   }
 
   writer.close
+  sedWriter.close
 
+  private def plotSEDvsTime(filledMarkers: Seq[Marker], w: Writer,
+    trialName: String) 
+  {
+    val nSamples = filledMarkers(0).co.length
+    val filtMarkers = filledMarkers.map(_.butter2(5.0))
+    val grid = MarkerGrid.fromCRMarkers(filtMarkers)
+    val e = 34.0e6  // Young's modulus, from Grady 2009; avg of W2 & W3
+    // compute SED in parallel, then re-order by index
+    val sed = (1 until nSamples).par.map((index: Int) =>
+      (index, grid.avgIncompNeoHookeanSED(0, index, e))).seq.
+      sortBy(_._1).map(_._2)
+    // dataset
+    val dataSet = new XYDataset with StaticDataset {
+      val series = Vector(TimeSampledSeries("W", sed.toIndexedSeq))
+    }
+    // plot
+    val chart = ChartFactory.createXYLineChart(
+      "", "Sample", "Avg SED (J/m^3)", dataSet,
+      PlotOrientation.VERTICAL, false, true, false
+    )
+    WhiteChartTheme(chart)
+    PlotToPDF.save(new File("%s/plots/%s_sed.pdf" format (outDir, trialName)),
+      chart, 250, 125)
+    // save plot to writer
+    val shortCap = "SED for %s" format sTeX(trialName)
+    val caption = "Average strain  energy density (assuming a homogeneous, " +
+    		  "incompressible, neo-Hookean behaviour) for trial " +
+                  "%s" format sTeX(trialName)
+    w.write("\\begin{figure}[H]\n")
+    w.write("\\includegraphics[width=\\columnwidth]" +
+      "{../output/plots/%s_sed.pdf}\n" format trialName)
+    w.write("\\caption[%s]{%s}\n" format(shortCap, caption))
+    w.write("\\end{figure}\n")
+    w.flush
+  }
+  
   private def saveImageLinks(w: Writer, trialName: String, Fc: Double,
       marker: Marker) {
     val psdShort = "PSD for \\texttt{%s}.".format(sTeX(trialName))

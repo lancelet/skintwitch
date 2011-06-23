@@ -4,6 +4,7 @@ import scala.collection.immutable._
 import mocaputils.Marker
 import scalala.tensor.Matrix
 import scalala.tensor.dense.DenseMatrix
+import math.abs
 
 trait MarkerGrid extends Grid[Marker] { self =>
   
@@ -56,6 +57,35 @@ trait MarkerGrid extends Grid[Marker] { self =>
     deformationGrad(s0, sample, coordSys).map(_ / period)
   }
   
+  /** Computes the deformation gradient tensor using the Peters1987 method.
+   *  
+   *  @param s0 un-deformed index
+   *  @param s deformed index
+   *  @return new grid with computed deformation gradient tensor */
+  def petersF(s0: Int, s: Int): Grid[Matrix[Double]] = 
+    new Grid[Matrix[Double]]{
+      val numRows = self.numRows
+      val numCols = self.numCols
+      def apply(row: Int, col: Int) = {
+        val adj = self.getFullAdjacent(row, col)
+        val qu = adj.map(rc => self(rc._1, rc._2).co(s0))
+        val qd = adj.map(rc => self(rc._1, rc._2).co(s))
+        TensorUtils.peters(self(row, col).co(s0), qu,
+                           self(row, col).co(s), qd)
+      }
+    }
+  
+  /** Computes the gradient (rate) of the deformation gradient tensor over
+   *  the grid using the Peters1987 method.
+   *  
+   *  @param sample sample at which to compute the tensor
+   *  @return new grid of the computed tensor */
+  def petersGradF(sample: Int): Grid[Matrix[Double]] = {
+    val period = 1.0 / self(0, 0).fs
+    val s0 = if (sample > 0) sample - 1 else 1
+    petersF(s0, sample).map(_ / period)
+  }
+  
   /** Computes the Biot strain tensor over the grid of markers.
    *
    *  @param s0 undeformed sample
@@ -83,6 +113,81 @@ trait MarkerGrid extends Grid[Marker] { self =>
     biot(s0, sample, coordSys).map(_ / period)
   }
   
+  /** Computes the Biot strain tensor using the Peters1987 method. */
+  def petersBiot(s0: Int, s: Int): Grid[Matrix[Double]] = {
+    val fGrid = petersF(s0, s)
+    fGrid.map(e => {
+      val (r, u) = TensorUtils.polarDecomp(e)
+      u - DenseMatrix.eye[Double](3)
+    })
+  }
+  
+  /** Computes the rate of the Biot strain tensor using the Peters1987 method.
+   */
+  def petersBiotGrad(sample: Int): Grid[Matrix[Double]] = {
+    val period = 1.0 / self(0, 0).fs
+    val s0 = if (sample > 0) sample - 1 else 1
+    petersBiot(s0, sample).map(_ / period)
+  }
+  
+  /** Computes the strain energy density at each grid point, assuming an
+   *  incompressible, Neo-Hookean material.
+   *  
+   *  The equation used is: `W = C_1 * (I_1 - 3)`, where `I_1` is the sum of
+   *  the squares of the principal stretches, and `C_1` is a material constant.
+   *  `C_1` is equal to half of the shear modulus `mu`, and for an
+   *  incompressible, isotropic material: `mu = E / (2 * (1 + nu))`, where
+   *  `E` is the Young's Modulus and `nu = 0.5` is the Poisson's Ratio.
+   *  Expanding this relationship gives: `C_1 = E / 6`.
+   *  
+   *  @param s0 un-deformed index
+   *  @param s deformed index
+   *  @param e Young's Modulus of the material
+   *  @return grid of strain energy density */
+  def incompNeoHookeanSED(s0: Int, s: Int, e: Double): 
+  Grid[Double] = {
+    petersF(s0, s).map { f =>
+      // get the principal stretches from the deformation gradient tensor
+      val (r, u) = TensorUtils.polarDecomp(f)
+      val prin = TensorUtils.principalComp(u)
+      val stretches = prin.map(_._1)
+      
+      // one of the principal stretches will be closest to 1.0; we want to
+      //  get rid of this one (it's the artificial, out-of-plane stretch,
+      //  which we couldn't calculate, so we set it to one).  we'll replace it
+      //  with a stretch which makes the material incompressible (isochoric).
+      //  if the stretches are so uniformly close to 1.0 that we accidentally 
+      //  pick the incorrect stretch to adjust, then it won't make much of
+      //  a difference numerically, since it will be adjusted back close to 
+      //  1.0 anyway.
+      val sToOne = stretches.map((x: Double) => abs(x - 1.0))
+      val compStretches = (stretches zip sToOne).sortBy(_._2).tail.map(_._1)
+      assert(compStretches.length == 2)
+      val (l1, l2) = (compStretches(0), compStretches(1))
+      val l3 = 1.0 / (l1 * l2)
+      
+      // finally compute the strain energy density
+      val i1 = l1 * l1 + l2 * l2 + l3 * l3
+      val w = (e / 6.0) * (i1 - 3.0)
+      w
+    }
+  }
+  
+  /** Computes the average strain energy density over all grid points, assuming
+   *  an incompressible, Neo-Hookean material.
+   *  
+   *  @param s0 un-deformed index
+   *  @param s deformed index
+   *  @param e Young's Modulus of the material
+   *  @return average strain energy density */
+  def avgIncompNeoHookeanSED(s0: Int, s: Int, e: Double): Double = {
+    val sedGrid = incompNeoHookeanSED(s0, s, e)
+    val sedSum = (for {
+      row <- 0 until sedGrid.numRows
+      col <- 0 until sedGrid.numCols
+    } yield sedGrid(row, col)).sum
+    sedSum / (sedGrid.numRows * sedGrid.numCols).toDouble
+  }
 }
 
 object MarkerGrid {

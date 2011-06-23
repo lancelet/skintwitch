@@ -81,4 +81,40 @@ trait Grid[T] { self =>
        apply(tri(2)._1, tri(2)._2)))
   }
   
+  /** All vertices that are adjacent, including diagonal ones.
+   *  
+   *  Vertices are found which are adjacent to the specified vertex (at the
+   *  given `row` and `col`).  The method handles central vertices:
+   *  {{{
+   *     + + +
+   *      \|/
+   *     +-o-+
+   *      /|\
+   *     + + +
+   *  }}}
+   *  Edge vertices:
+   *  {{{
+   *    +-o-+
+   *     /|\
+   *    + + +
+   *  }}}
+   *  and corner vertices:
+   *  {{{
+   *    o-+
+   *    |\
+   *    + +
+   *  }}}
+   *  
+   *  @param row row of the central vertex
+   *  @param col column of the central vertex
+   *  @return sequence of `(Int, Int)` containing adjacent vertices */
+  def getFullAdjacent(row: Int, col: Int): Seq[(Int, Int)] = {
+    val template = Seq(
+      (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))
+    val ofsTemplate = template.map(rc => (rc._1 + row, rc._2 + col))
+    val validTris = ofsTemplate.filter(rc =>
+      rc._1 >= 0 && rc._1 < numRows && rc._2 >= 0 && rc._2 < numCols)
+    validTris
+  }
+  
 }

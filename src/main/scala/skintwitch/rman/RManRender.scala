@@ -1,13 +1,20 @@
 package skintwitch.rman
 
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable._
+import scala.collection.parallel.immutable.ParSeq
+import scala.util.Random
 import ri._
-import skintwitch.MarkerGrid
+import skintwitch.{ Grid, MarkerGrid, VGrid }
 import simplex3d.math.double._
 import simplex3d.math.double.functions._
 import vtk.vtkCamera
+import scalala.library.Library.normalize
 import scalala.tensor.Matrix
-import scalala.tensor.dense.DenseMatrix
+import scalala.tensor.dense.{ DenseMatrix, DenseVector }
+import java.io.{ BufferedOutputStream, BufferedWriter, File, FileOutputStream, 
+                 OutputStreamWriter, FilenameFilter }
+import simplex3d.noise.ClassicalGradientNoise
 
 object RManRender {
 
@@ -64,18 +71,30 @@ object RManRender {
     }
   }
   
-  def evalPatch(u: Double, v: Double, 
-    basis: Matrix[Double], P: Matrix[Double]): (Double, Double, Double) = {
-    val U = DenseMatrix(Array(u*u*u, u*u, u, 1))
-    val V = DenseMatrix(Array(v*v*v, v*v, v, 1))
-    val r = (U * basis * P * basis.t * V.t).data
-    (r(0), r(1), r(2))
-  }
-
-  def renderAnim(grid: MarkerGrid, camera: vtkCamera) {
+  private def renderFileName(frame: Int) = "./render/%05d.tif" format frame
+  private def fileExists(name: String) = (new File(name)).exists
+  
+  def renderAnim(grid: MarkerGrid, camera: vtkCamera, 
+                 overwrite: Boolean = false) 
+  {
     val nFrames = grid(0, 0).co.length
-    for (frame <- 0 until nFrames by 4) {
-      renderFrame(frame, grid, camera)
+    for (frame <- (0 until nFrames by 4).par) {
+      // only render if the overwrite flag is set, or if the file doesn't exist
+      if (overwrite || !fileExists(renderFileName(frame))) {
+        renderFrame(frame, grid, camera)
+      }
+      
+      // clean-up RIB files post-render
+      val ribFileNamesForFrame = (new File("./rib/")).list(
+        new FilenameFilter {
+          def accept(dir: File, name: String) = 
+            name.startsWith("f%05d" format frame)
+        }
+      )
+      for (fileName <- ribFileNamesForFrame) {
+        println("Post-render; deleting RIB file \"%s\"" format fileName)
+        (new File("./rib/" + fileName)).delete
+      }
     }
   }
   
@@ -84,44 +103,100 @@ object RManRender {
     import riFunctions._
     Begin("aqsis") {
       
-      Option("limits", "bucketsize", Seq(64, 64))
-      Format(1280, 720, 1)
-      PixelSamples(4, 4)
-      PixelFilter(MitchellFilter, 1.11, 1.11)
+      Option("searchpath", "shader", "./shaders:&")
+      Option("limits", "bucketsize", Seq(32, 32))
+      Format(1920, 1080, 1)
+      PixelSamples(10, 10)
+      PixelFilter(GaussianFilter, 1.4, 1.4)
 
+      TransformBlock {
+        Rotate(30, 0, 1, 0)
+        Rotate(30, 1, 0, 0)
+        LightSource("distantlight")
+      }
+      
       exportCamera(getContext(), camera)
       
       FrameBlock(1) {
-        Display("render/%05d.tif" format frame, DisplayFile, DisplayRGB)
+        Display(renderFileName(frame), DisplayFile, DisplayRGB)
         Display("+%05d.tif" format frame, DisplayFrameBuffer, DisplayRGB)
         Sides(1)
         
         WorldBlock {
           
+          // render spheres for the markers
+          /*
           for {
             r <- 0 until grid.numRows
             c <- 0 until grid.numCols
             (x, y, z) = grid(r, c).co(frame)
-          } TransformBlock {
+          } AttributeBlock {
+            Surface("matte")
             Translate(x, y, z)
             Scale(10, 10, 10)
             Sphere(1, -1, 1, 360)
           }
+          */
+
+          // expand grid, so that edges are linearly interpolated outward
+          //  (bit fugly, but it works for Catmull-Rom patch construction)
+          val vpg = grid.map(m => 
+            DenseVector(m.co(frame)._1, m.co(frame)._2, m.co(frame)._3))
+          val rows = for (r <- 0 until vpg.numRows) yield {
+            Seq(
+              Seq(vpg(r, 0) - (vpg(r, 1) - vpg(r, 0))),
+              for (c <- 0 until vpg.numCols) yield vpg(r, c),
+              Seq(vpg(r, vpg.numCols - 1) - 
+                 (vpg(r, vpg.numCols - 2) - vpg(r, grid.numCols - 1)))
+            ).flatten
+          }
+          val cols = (for (c <- rows.transpose) yield {
+            Seq(
+              Seq(c(0) - (c(1) - c(0))),
+              c,
+              Seq(c(c.length - 1) -
+                  (c(c.length - 2) - c(c.length - 1)))
+            ).flatten.toIndexedSeq
+          }).toIndexedSeq
+          val ct = cols.transpose
+          val egrid = VGrid(new Grid[(Double, Double, Double)] {
+            val numRows = grid.numRows + 2
+            val numCols = grid.numCols + 2
+            def apply(row: Int, col: Int) = {
+              val vec = ct(row)(col)
+              (vec(0), vec(1), vec(2))
+            }
+          })
           
+          // render bicubic patch mesh for the skin
           val p = (for {
-            r <- Seq(Seq(0), 0 until grid.numRows, Seq(grid.numRows-1)).flatten
-            c <- Seq(Seq(0), 0 until grid.numCols, Seq(grid.numCols-1)).flatten
-            (x, y, z) = grid(r, c).co(frame)
+            r <- 0 until egrid.numRows
+            c <- 0 until egrid.numCols
+            (x, y, z) = egrid(r, c)
           } yield {
             Seq(x, y, z)
           }).flatten
+          /*
           AttributeBlock {
+            Surface("matte")
             ReverseOrientation
             Basis(CatmullRomBasis, 1, CatmullRomBasis, 1)
             PatchMesh(Bicubic, 
               grid.numCols+2, NonPeriodic, grid.numRows+2, NonPeriodic,
               "P", p)
           }
+          */
+          
+          // hair; here, we approximate the bicubic patch using a tesselated
+          //  bilinear patch
+          val bcpm = ApproxBicubicPatchMesh(
+            BicubicPatchMesh.catmullRom, 1,
+            BicubicPatchMesh.catmullRom, 1,
+            grid.numCols+2, grid.numRows+2,
+            p.toIndexedSeq,
+            100, 100
+          )
+          renderHair(getContext, bcpm, frame)
           
         }
         
@@ -130,4 +205,118 @@ object RManRender {
     } // Begin
   }
   
+  def renderHair(context: Context, bcpm: ApproxBicubicPatchMesh, frame: Int) {
+    val riFunctions = new Ri()
+    import riFunctions._
+    
+    Resume(context) {
+      AttributeBlock {
+        Basis(CatmullRomBasis, 1, CatmullRomBasis, 1)
+        Color(Seq(0.243, 0.145, 0.153))
+        Surface("hair_gritz", 
+                "color rootcolor", Seq(0.1, 0.05, 0.05),
+                "color tipcolor", Seq(0.243, 0.145, 0.153))
+        def fileName(index: Int) = 
+          "./rib/f%05dhair%05d.rib" format (frame, index)
+        for ((hp, index) <- (hairPatches zipWithIndex).par) {
+          hp.evalToFile(bcpm, fileName(index))
+        }
+        for ((hp, index) <- (hairPatches.zipWithIndex)) {
+          DelayedReadArchive(fileName(index), hp.bounds(bcpm, 50.0))
+        }
+      }
+    }
+  }
+
+  case class Hair(u: Double, v: Double, 
+                  noisen: Double, noisev: Double,
+                  nclump: Double,
+                  length: Double = 10.0)
+  case class HairPatch(minU: Double, maxU: Double,
+                       minV: Double, maxV: Double,
+                       noiseSeed: Int, nHairs: Int) 
+  {
+    val r = new Random(noiseSeed)
+    val noise = new ClassicalGradientNoise(0)
+    val hairs: ParSeq[Hair] = ({
+      val urange = maxU - minU
+      val vrange = maxV - minV
+      for (i <- 0 until nHairs) yield {
+        val u = minU + r.nextDouble * urange
+        val v = minV + r.nextDouble * vrange
+        val noisen = r.nextGaussian
+        val noisev = if (r.nextDouble > 0.99) {
+          r.nextGaussian * 10
+        } else {
+          r.nextGaussian
+        }
+        val length = if (r.nextDouble > 0.8) {
+          12.0 + r.nextGaussian * 5.0 + noise(u * 40, v * 11) * 3.0
+        } else {
+          5.0 + r.nextGaussian * 2.0 + noise(u * 40, v * 11) * 2.0
+        }
+        val nclump = noise(u * 35, v * 10)
+        Hair(u, v, noisen, noisev, nclump, length)
+      }
+    }).par
+    def bounds(bcpm: ApproxBicubicPatchMesh, growBy: Double): BoundBox = {
+      val corners = Seq(
+        bcpm(minU, minV).p,
+        bcpm(minU, maxV).p,
+        bcpm(maxU, minV).p,
+        bcpm(maxU, maxV).p
+      )
+      BBox(corners).growBy(growBy).rman
+    }
+    def evalToFile(bcpm: ApproxBicubicPatchMesh, fileName: String) = 
+    {
+      val hairp = (for {
+        h <- hairs.par
+        bcr = bcpm(h.u, h.v)
+        p = bcr.p
+        n = bcr.n * (1.0 + 0.1 * h.noisen + 0.35 * h.nclump)
+        u = bcr.dpdu.normalized
+        v = bcr.dpdv.normalized
+        p0 = p - u * h.length
+        p1 = p
+        p2 = p + (u + n*0.2) * h.length + (v * 0.05) * h.noisev
+        p3 = p + (u*2 + n*0.2) * h.length + (v * 0.1) * h.noisev
+      } yield Seq(p0.e0, p0.e1, p0.e2,
+                  p1.e0, p1.e1, p1.e2,
+                  p2.e0, p2.e1, p2.e2,
+                  p3.e0, p3.e1, p3.e2)
+      ).seq.flatten
+      
+      val fs = new BufferedOutputStream(new FileOutputStream(fileName))
+      val fw = new BufferedWriter(new OutputStreamWriter(fs))
+      fw.write("Curves \"cubic\" \n")
+      fw.write("[ "); for (i <- 0 until nHairs) fw.write("4 "); fw.write("]\n")
+      fw.write("\"nonperiodic\"\n")
+      fw.write("\"constantwidth\" [ 0.3 ]\n")
+      fw.write("\"P\"\n")      
+      fw.write("[ ")
+      for (p <- hairp) fw.write("%.2f " format p)
+      fw.write("]\n")
+      fs.flush
+      fw.flush
+      fw.close
+    }
+  }
+  val nHairs = 4000000
+  //val nHairs = 500000
+  val nPatches = 10
+  val nHairsPerPatch = nHairs / (nPatches * nPatches)
+  val hairPatches = {
+    val r = new Random(100)
+    (for (uPatch <- 0 until nPatches) yield {
+      val minU = uPatch.toDouble / nPatches
+      val maxU = (uPatch + 1).toDouble / nPatches
+      for (vPatch <- 0 until nPatches) yield {
+        val minV = vPatch.toDouble / nPatches
+        val maxV = (vPatch + 1).toDouble / nPatches
+        HairPatch(minU, maxU, minV, maxV, r.nextInt, nHairsPerPatch)
+      }
+    }).flatten
+  }
+      
 }

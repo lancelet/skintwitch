@@ -4,7 +4,7 @@ import scala.collection.immutable._
 import net.miginfocom.swing.MigLayout
 import java.awt.{ BorderLayout, Dimension }
 import java.awt.event.{ ActionEvent, ActionListener }
-import java.io.File
+import java.io.{ File, FileWriter }
 import javax.swing.{ ImageIcon, JPanel, JToolBar, KeyStroke, SwingUtilities,
   Timer }
 import javax.swing.filechooser.FileNameExtensionFilter
@@ -12,13 +12,18 @@ import scala.swing._
 import scala.swing.event._
 import _root_.vtk.{ vtkRenderWindowPanel, vtkInteractorStyleTrackballCamera }
 import mocaputils.{ GapFiller, TRCReader }
-import skintwitch.vtk.{ AnimatedActor, BiotGradActor, MarkerGridActor }
+import skintwitch.vtk.{ AnimatedActor, BiotGradActor, MarkerGridActor,
+  PetersBiotGradActor}
 import skintwitch.rman.RManRender
 import simplex3d.math.double.Mat4
+import net.liftweb.json.{ DefaultFormats, parse }
+import net.liftweb.json.Serialization.write
+import scala.io.Source
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
   VtkLoadLibrary.vtkLoadLibraries()
+  import VtkStrainViz._
   
   // collection (mutable) of AnimatedActors (used so that we can update the
   //  current sample during animation)
@@ -72,7 +77,7 @@ class VtkStrainViz {
     value = 0
     reactions += {
       case ValueChanged(_) => {
-        actors.map(_.setSample(value))
+        actors.par.map(_.setSample(value))
         vtkPanel.GetRenderer().ResetCameraClippingRange()
         vtkPanel.Render()
       }
@@ -146,10 +151,68 @@ class VtkStrainViz {
     }
   }
   
+  /** Saves camera parameters to a JSON file. */
+  private val saveCameraParams = new Action("Save camera parameters...") {
+    def apply() {
+      // show file dialog
+      val fc = new FileChooser(new File(".")) {
+        fileFilter = new FileNameExtensionFilter("JSON files", "json")
+      }
+      if (fc.showSaveDialog(null) != FileChooser.Result.Approve) {
+        return
+      }
+      val fileName = fc.selectedFile.getCanonicalFile.getPath
+    
+      // fetch parameters in JSON format
+      implicit val formats = DefaultFormats
+      val camera = vtkPanel.GetRenderer.GetActiveCamera
+      val camParam = JSONCamParams(
+        camera.GetViewAngle, camera.GetRoll,
+        camera.GetFocalPoint, camera.GetPosition)
+      val camJSON = write(camParam)
+    
+      // save parameters
+      val fw = new FileWriter(fileName)
+      fw.write(camJSON)
+      fw.close
+    }
+  }
+  
+  /** Reads camera parameters from a JSON file. */
+  private val readCameraParams = new Action("Read camera parameters...") {
+    def apply() {
+      // show file dialog
+      val fc = new FileChooser(new File(".")) {
+        fileFilter = new FileNameExtensionFilter("JSON files", "json")
+      }
+      if (fc.showOpenDialog(null) != FileChooser.Result.Approve) {
+        return
+      }
+      val fileName = fc.selectedFile.getCanonicalFile.getPath
+
+      // read the file / parse JSON
+      implicit val formats = DefaultFormats
+      val json = parse(Source.fromFile(fileName).mkString)
+      val cp = json.extract[JSONCamParams]
+      
+      // configure the camera
+      val camera = vtkPanel.GetRenderer.GetActiveCamera
+      camera.SetViewAngle(cp.viewAngle)
+      camera.SetFocalPoint(cp.focalPoint)
+      camera.SetPosition(cp.position)
+      camera.SetRoll(cp.roll)
+      vtkPanel.GetRenderer().ResetCameraClippingRange()
+      vtkPanel.Render()
+    }
+  }
+  
+  
   // menu bar
   private val topMenuBar = new MenuBar {
     contents += new Menu("File") {
       contents += new MenuItem(openTrcAction)
+      contents += new MenuItem(saveCameraParams)
+      contents += new MenuItem(readCameraParams)
     }
     contents += new Menu("Render") {
       contents += new MenuItem(renderFrameAction)
@@ -158,7 +221,7 @@ class VtkStrainViz {
   }
   
   // vtk panel
-  private val vtkPanel = new vtkRenderWindowPanel {
+  private lazy val vtkPanel = new vtkRenderWindowPanel {
     setMinimumSize(new Dimension(0, 0))
     setPreferredSize(new Dimension(0, 0))    
     setInteractorStyle(new vtkInteractorStyleTrackballCamera)
@@ -178,7 +241,7 @@ class VtkStrainViz {
       peer.add(vtkHostPanel, BorderLayout.CENTER)
     }
   }
-  
+    
   /** Opens a TRC file. */
   private var grid: MarkerGrid = null
   private var trialName: String = null
@@ -220,9 +283,16 @@ class VtkStrainViz {
     vtkPanel.GetRenderer.AddActor(mga.getActor)
     
     // add Biot tensor to the actors
+    /*
     val biotGradActor = new BiotGradActor(grid)
     actors += biotGradActor
     vtkPanel.GetRenderer.AddActor(biotGradActor.getActor)
+    */
+    
+    // add peters Biot tensor
+    val petersBiotGradActor = new PetersBiotGradActor(grid)
+    actors += petersBiotGradActor
+    vtkPanel.GetRenderer.AddActor(petersBiotGradActor.getActor)
     
     // reset the camera
     vtkPanel.GetRenderer.ResetCamera
@@ -237,6 +307,12 @@ class VtkStrainViz {
 
 /** Execute VtkStrainViz on the AWT Event Dispatch Thread. */
 object VtkStrainViz {
+  /** Camera parameters for JSON storage. */
+  private case class JSONCamParams(
+    viewAngle: Double, roll: Double, focalPoint: Array[Double],
+    position: Array[Double]
+  )  
+  
   def main(args: Array[String]) = {
     // OSX kung-fu (run before Swing is started)
     if (System.getProperty("os.name") == "Mac OS X") {
