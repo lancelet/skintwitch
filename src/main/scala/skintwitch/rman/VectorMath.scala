@@ -1,6 +1,7 @@
 package skintwitch.rman
 
 import math.sqrt
+import skintwitch.Linearizable
 
 /** 3D vector. */
 case class V3(e0: Double, e1: Double, e2: Double) {
@@ -24,6 +25,10 @@ object V3 {
     require(a.length == 3)
     V3(a(0), a(1), a(2))
   }
+  class V3isLinearizable() extends Linearizable[V3] {
+    def lin(x0: V3, x1: V3, s: Double): V3 = x0 * (1.0 - s) + x1 * s
+  }
+  implicit def v3ToLinearizable(): Linearizable[V3] = new V3isLinearizable()
 }
 
 /** 4D column vector. */

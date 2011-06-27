@@ -15,6 +15,7 @@ import scalala.tensor.dense.{ DenseMatrix, DenseVector }
 import java.io.{ BufferedOutputStream, BufferedWriter, File, FileOutputStream, 
                  OutputStreamWriter, FilenameFilter }
 import simplex3d.noise.ClassicalGradientNoise
+import V3._
 
 object RManRender {
 
@@ -52,7 +53,8 @@ object RManRender {
       
       Option("searchpath", "shader", "./shaders:&")
       Option("limits", "bucketsize", Seq(32, 32))
-      Format(1920, 1080, 1)
+      //Format(1920, 1080, 1)
+      Format(1280, 720, 1)
       PixelSamples(10, 10)
       PixelFilter(GaussianFilter, 1.4, 1.4)
 
@@ -72,7 +74,6 @@ object RManRender {
         WorldBlock {
           
           // render spheres for the markers
-          /*
           for {
             r <- 0 until grid.numRows
             c <- 0 until grid.numCols
@@ -83,59 +84,28 @@ object RManRender {
             Scale(10, 10, 10)
             Sphere(1, -1, 1, 360)
           }
-          */
 
           // expand grid, so that edges are linearly interpolated outward
-          //  (bit fugly, but it works for Catmull-Rom patch construction)
-          val vpg = grid.map(m => 
-            DenseVector(m.co(frame)._1, m.co(frame)._2, m.co(frame)._3))
-          val rows = for (r <- 0 until vpg.numRows) yield {
-            Seq(
-              Seq(vpg(r, 0) - (vpg(r, 1) - vpg(r, 0))),
-              for (c <- 0 until vpg.numCols) yield vpg(r, c),
-              Seq(vpg(r, vpg.numCols - 1) - 
-                 (vpg(r, vpg.numCols - 2) - vpg(r, grid.numCols - 1)))
-            ).flatten
+          val v3grid = grid.map { m =>
+            val co = m.co(frame)
+            V3(co._1, co._2, co._3)
           }
-          val cols = (for (c <- rows.transpose) yield {
-            Seq(
-              Seq(c(0) - (c(1) - c(0))),
-              c,
-              Seq(c(c.length - 1) -
-                  (c(c.length - 2) - c(c.length - 1)))
-            ).flatten.toIndexedSeq
-          }).toIndexedSeq
-          val ct = cols.transpose
-          val egrid = VGrid(new Grid[(Double, Double, Double)] {
-            val numRows = grid.numRows + 2
-            val numCols = grid.numCols + 2
-            def apply(row: Int, col: Int) = {
-              val vec = ct(row)(col)
-              (vec(0), vec(1), vec(2))
-            }
-          })
+          val egrid = v3grid.expandEdgesByOne
           
           // render bicubic patch mesh for the skin
-          val p = (for {
-            r <- 0 until egrid.numRows
-            c <- 0 until egrid.numCols
-            (x, y, z) = egrid(r, c)
-          } yield {
-            Seq(x, y, z)
-          }).flatten
-          /*
+          val p = egrid.rowMajor.map(v => Seq(v.e0, v.e1, v.e2)).flatten
           AttributeBlock {
             Surface("matte")
             ReverseOrientation
             Basis(CatmullRomBasis, 1, CatmullRomBasis, 1)
             PatchMesh(Bicubic, 
-              grid.numCols+2, NonPeriodic, grid.numRows+2, NonPeriodic,
+              egrid.numCols, NonPeriodic, egrid.numRows, NonPeriodic,
               "P", p)
           }
-          */
           
           // hair; here, we approximate the bicubic patch using a tesselated
           //  bilinear patch
+          /*
           val bcpm = ApproxBicubicPatchMesh(
             BicubicPatchMesh.catmullRom, 1,
             BicubicPatchMesh.catmullRom, 1,
@@ -144,6 +114,7 @@ object RManRender {
             100, 100
           )
           renderHair(getContext, bcpm, frame)
+          */
           
         }
         

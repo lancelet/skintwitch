@@ -117,4 +117,64 @@ trait Grid[T] { self =>
     validTris
   }
   
+  /** Returns the grid in a row-major sequence. */
+  def rowMajor(): Seq[T] = {
+    val vb = new VectorBuilder[T]
+    vb.sizeHint(numRows * numCols)
+    for {
+      r <- 0 until numRows
+      c <- 0 until numCols
+    } vb += apply(r, c)
+    vb.result
+  }
+  
+  /** Returns the grid in a column-major sequence. */
+  def colMajor(): Seq[T] = {
+    val vb = new VectorBuilder[T]
+    vb.sizeHint(numRows * numCols)
+    for {
+      c <- 0 until numCols
+      r <- 0 until numRows
+    } vb += apply(r, c)
+    vb.result
+  }
+  
+  /** Expands all edges of the grid by one row or column, using linear
+   *  interpolation of the grid values (useful for RenderMan patch
+   *  bicubic rendering as Catmull-Rom patches). */
+  def expandEdgesByOne()(implicit TtoL: () => Linearizable[T]): Grid[T] =
+    expandRows.expandCols
+  
+  private def expandRows()(implicit TtoL: () => Linearizable[T]): Grid[T] =
+  new Grid[T] {
+    private val l = TtoL()
+    val numRows = self.numRows + 2
+    val numCols = self.numCols
+    def apply(row: Int, col: Int): T = {
+      if (row == 0) {
+        l.lin(self(0, col), self(1, col), -1)
+      } else if (row == numRows - 1) {
+        l.lin(self(self.numRows - 2, col), self(self.numRows - 1, col), 2)
+      } else {
+        self(row - 1, col)
+      }
+    }
+  }
+  
+  private def expandCols()(implicit TtoL: () => Linearizable[T]): Grid[T] =
+  new Grid[T] {
+    private val l = TtoL()
+    val numRows = self.numRows
+    val numCols = self.numCols + 2
+    def apply(row: Int, col: Int): T = {
+      if (col == 0) {
+        l.lin(self(row, 0), self(row, 1), -1)
+      } else if (col == numCols - 1) {
+        l.lin(self(row, self.numCols - 2), self(row, self.numCols - 1), 2)
+      } else {
+        self(row, col - 1)
+      }
+    }
+  }
+  
 }
