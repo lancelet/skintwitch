@@ -55,10 +55,14 @@ class TriTest extends FunSuite with ShouldMatchers {
       val b = ( 1.0, -1.0, 0.0)
       val c = (-1.0,  1.0, 0.0)
     }
-    tri.distanceTo((-0.453, -0.472, 1.0)) should be (1.0 plusOrMinus 1e-10)
-    tri.distanceTo((0.0, -2.0, 1.0)) should be (1.41 plusOrMinus 1e-2)
-    tri.distanceTo((1.707, -1.707, 1.0)) should be (1.41 plusOrMinus 1e-2)
-    tri.distanceTo((1.892, -1.452, 1.0)) should be (1.41 plusOrMinus 1e-2)
+    val (a, pta) = tri.distanceTo((-0.453, -0.472, 1.0))
+    val (b, ptb) = tri.distanceTo((0.0, -2.0, 1.0))
+    val (c, ptc) = tri.distanceTo((1.707, -1.707, 1.0))
+    val (d, ptd) = tri.distanceTo((1.892, -1.452, 1.0))
+    a should be (1.0 plusOrMinus 1e-10)
+    b should be (1.41 plusOrMinus 1e-2)
+    c should be (1.41 plusOrMinus 1e-2)
+    d should be (1.41 plusOrMinus 1e-2)
   }
   
 }

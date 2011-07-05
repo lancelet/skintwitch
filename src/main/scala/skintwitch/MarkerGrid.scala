@@ -5,6 +5,7 @@ import mocaputils.Marker
 import scalala.tensor.Matrix
 import scalala.tensor.dense.DenseMatrix
 import math.abs
+import skintwitch.mesh.TriMesh
 
 trait MarkerGrid extends Grid[Marker] { self =>
   
@@ -213,6 +214,36 @@ trait MarkerGrid extends Grid[Marker] { self =>
     val zs = allSamples.map(_._3)
     (xs.sum / nSamples, ys.sum / nSamples, zs.sum / nSamples)
   }
+  
+  /** Dices the marker grid to a triangular mesh at a given sample time.
+   * 
+   *  @param index sample point at which to take marker coordinates
+   *  @return triangular mesh at the specified sample time */
+  def diceToTrimesh(index: Int): TriMesh = {
+    val verts = rowMajor.map(_.co(index)).toIndexedSeq
+    def rowColToIndex(rc: (Int, Int)) = rc._2 + rc._1 * numCols
+    val faceBuilder = new VectorBuilder[(Int, Int, Int)]
+    faceBuilder.sizeHint(2 * (numRows - 1) * (numCols - 1))
+    for {
+      row <- 0 until numRows - 1
+      col <- 0 until numCols - 1
+    } {
+      val triASeq = Vector(
+        (0 + row, 0 + col),
+        (1 + row, 1 + col),
+        (0 + row, 1 + col)).map(rowColToIndex(_))
+      val triBSeq = Vector(
+        (0 + row, 0 + col),
+        (1 + row, 0 + col),
+        (1 + row, 1 + col)).map(rowColToIndex(_))
+      val triA = (triASeq(0), triASeq(1), triASeq(2))
+      val triB = (triBSeq(0), triBSeq(1), triBSeq(2))
+      faceBuilder += triA
+      faceBuilder += triB
+    }
+    new TriMesh(verts, faceBuilder.result)
+  }
+  
 }
 
 object MarkerGrid {

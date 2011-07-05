@@ -62,20 +62,22 @@ trait Tri {
   /** Computes the shortest distance between a point and the triangle.
    *  
    *  @param p point for which to find the shortest distance
-   *  @return shortest distance between the triangle and `p` */
-  def distanceTo(p: (Double, Double, Double)): Double = {
+   *  @return shortest distance between the triangle and `p`, and the
+   *    point at which the shortest distance was found */
+  def distanceTo(p: (Double, Double, Double)): 
+  (Double, (Double, Double, Double)) = {
     val pp = projectInto(p)
     val bary = projectIntoBarycentric(p, true)
     if (bary._1 >= 0.0 && bary._1 <= 1.0 &&
         bary._2 >= 0.0 && bary._2 <= 1.0 &&
         bary._3 >= 0.0 && bary._3 <= 1.0) { // inside the triangle
-      (pp - p).length
+      ((pp - p).length, pp)
     } else if (bary._2 < 0 && bary._3 < 0) { // definitely closest to vertex a
-      (a - p).length
+      ((a - p).length, a)
     } else if (bary._1 < 0 && bary._3 < 0) { // definitely closest to vertex b
-      (b - p).length
+      ((b - p).length, b)
     } else if (bary._1 < 0 && bary._2 < 0) { // definitely closest to vertex c
-      (c - p).length
+      ((c - p).length, c)
     } else {
       // here, we may be closest to either an edge or a vertex, so find
       //  the closest edge and use the distanceToEdge() method
@@ -96,16 +98,18 @@ trait Tri {
    *  @param ea edge vertex a
    *  @param eb edge vertex b
    *  @param p point for which to find the distance
-   *  @return shortest distance between `ea -> eb` and `p` */
+   *  @return shortest distance between `ea -> eb` and `p`, and the
+   *    point on the edge at which the shortest distance occurs */
   private def distanceToEdge(ea: (Double, Double, Double),
                              eb: (Double, Double, Double),
-                             p: (Double, Double, Double)): Double = 
+                             p: (Double, Double, Double)): 
+  (Double, (Double, Double, Double)) = 
   {
     val eaeb = eb - ea
     val q = (eaeb dot (p - ea)) / eaeb.length2
     val qnorm = if (q < 0) 0 else if (q > 1) 1 else q
     val linePt = ea + eaeb * qnorm
-    (linePt - p).length
+    ((linePt - p).length, linePt)
   }
   
 }
@@ -113,4 +117,5 @@ trait Tri {
 object Tri {
   implicit def tupleToV3(x: (Double, Double, Double)): V3 = 
     V3(x._1, x._2, x._3)
+  implicit def V3ToTuple(v: V3): (Double, Double, Double) = (v.e0, v.e1, v.e2)
 }
