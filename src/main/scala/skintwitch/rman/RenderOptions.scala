@@ -17,6 +17,7 @@ case class RenderOptions(trialFileName: String,
   camParams: CameraParams,
   xRes: Int, yRes: Int,
   xSamples: Int, ySamples: Int,
+  renderNthSample: Int,
   renderMarkers: Boolean,
   renderSkinGrid: Boolean,
   renderHair: Boolean,
@@ -37,6 +38,7 @@ object RenderOptions {
     val yresolution = new TextField("1080")
     val xsamples = new TextField("6")
     val ysamples = new TextField("6")
+    val rendernthsample = new TextField("1")
     val renderMarkers = new CheckBox("Render markers")
     val renderSkinGrid = new CheckBox("Render skin grid")
     val renderHair = new CheckBox("Render hair")
@@ -55,6 +57,10 @@ object RenderOptions {
       add(new Label("x").peer)
       add(ysamples.peer, "growx,wrap")
     }
+    val otherOptPanel = new JPanel(new MigLayout("fillx,insets n n 0 n")) {
+      add(new Label("Render every nth sample").peer, "align right")
+      add(rendernthsample.peer, "growx,wrap")
+    }
     val checkboxPanel = new JPanel(new MigLayout("fillx,insets n n 0 n")) {
       add(renderMarkers.peer, "growx,wrap")
       add(renderSkinGrid.peer, "growx,wrap")
@@ -67,6 +73,7 @@ object RenderOptions {
     }
     val topPanel = new BoxPanel(Orientation.Vertical) {
       peer.add(resSamplePanel)
+      peer.add(otherOptPanel)
       peer.add(checkboxPanel)
       peer.add(buttonPanel)
     }
@@ -86,6 +93,7 @@ object RenderOptions {
               trialFileName, CameraParams(camera),
               xresolution.text.toInt, yresolution.text.toInt,
               xsamples.text.toInt, ysamples.text.toInt,
+              rendernthsample.text.toInt,
               renderMarkers.selected,
               renderSkinGrid.selected,
               renderHair.selected,

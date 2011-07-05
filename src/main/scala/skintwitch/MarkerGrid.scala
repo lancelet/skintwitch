@@ -188,6 +188,31 @@ trait MarkerGrid extends Grid[Marker] { self =>
     } yield sedGrid(row, col)).sum
     sedSum / (sedGrid.numRows * sedGrid.numCols).toDouble
   }
+  
+  /** Finds the average position (unweighted centroid) of the markers at a 
+   *  given time sample.
+   *  
+   *  @param s sample at which to compute the average position
+   *  @return average position at sample s */
+  def avgPosition(s: Int): (Double, Double, Double) = {
+    val rm = rowMajor
+    val xs = rm.map(_.xs(s))
+    val ys = rm.map(_.ys(s))
+    val zs = rm.map(_.zs(s))
+    val nMarkers = numRows * numCols
+    (xs.sum / nMarkers, ys.sum / nMarkers, zs.sum / nMarkers)
+  }
+  
+  /** Average position (unweighted centroid) of the markers of the grid over
+   *  all time. */
+  lazy val avgPosition: (Double, Double, Double) = {
+    val nSamples = self(0, 0).co.length
+    val allSamples = (0 until nSamples).par.map(avgPosition(_))
+    val xs = allSamples.map(_._1)
+    val ys = allSamples.map(_._2)
+    val zs = allSamples.map(_._3)
+    (xs.sum / nSamples, ys.sum / nSamples, zs.sum / nSamples)
+  }
 }
 
 object MarkerGrid {
