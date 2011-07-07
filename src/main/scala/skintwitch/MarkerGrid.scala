@@ -214,12 +214,22 @@ trait MarkerGrid extends Grid[Marker] { self =>
     val zs = allSamples.map(_._3)
     (xs.sum / nSamples, ys.sum / nSamples, zs.sum / nSamples)
   }
-  
+
   /** Dices the marker grid to a triangular mesh at a given sample time.
    * 
    *  @param index sample point at which to take marker coordinates
-   *  @return triangular mesh at the specified sample time */
+   *  @return triangular mesh at the specified sample time */  
   def diceToTrimesh(index: Int): TriMesh = {
+    synchronized { // protect against multiple-thread access
+      triMeshCache.getOrElse(index, {
+        val triMesh = diceToTrimesh_worker(index)
+        triMeshCache(index) = triMesh
+        triMesh
+      })
+    }
+  }  
+  private val triMeshCache = scala.collection.mutable.Map.empty[Int, TriMesh]
+  private def diceToTrimesh_worker(index: Int): TriMesh = {
     // compute vertices
     val verts = rowMajor.map(_.co(index)).toIndexedSeq
     // compute triangular faces

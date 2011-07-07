@@ -56,14 +56,20 @@ class DistancePlotActor(
         (pLong, mLong), (pMiddle, mMiddle), (pShort, mShort), (pMed, mMed)))
     }
     
+    def inGrid(st: (Double, Double)): Boolean = { 
+      val minm = 0.01
+      val maxm = 1.0 - minm
+      (st._1 > minm) && (st._1 < maxm) && (st._2 > minm) && (st._2 < maxm)
+    }
+    
     // find distance to the mesh at each time index
     for {
       i <- 0 until markers(0).co.length
       triMesh = grid.diceToTrimesh(i)
       (dist, xPoint, st) = triMesh.signedDistanceTo(mTip.co(i))
-    } yield dist
+    } yield (dist, inGrid(st))
   }
-  private var distances: Seq[Double] = Seq.empty[Double]
+  private var distances: Seq[(Double, Boolean)] = Seq.empty[(Double, Boolean)]
   private val distFuture = Futures.future {
     distances = getDistances
     SwingUtilities.invokeLater(new Runnable {
@@ -81,7 +87,7 @@ class DistancePlotActor(
   private def setDistancesInActor() {
     assert(SwingUtilities.isEventDispatchThread)
     val distanceArray = new vtkDoubleArray {
-      SetJavaArray(distances.toArray)
+      SetJavaArray(distances.unzip._1.toArray)
     }
     val fieldData = new vtkFieldData {
       AddArray(distanceArray)
@@ -90,7 +96,8 @@ class DistancePlotActor(
       SetFieldData(fieldData)
     }
     plotActor.AddDataObjectInput(dataObject)
-    plotActor.SetReferenceYValue(distances.min + threshold)
+    plotActor.SetReferenceYValue(
+        distances.filter(_._2).map(_._1).min + threshold)
     plotActor.VisibilityOn
     update()
     loadCallback()
