@@ -9,12 +9,15 @@ This is the cutaneous trunci skin twitch project.
 Completed:
 
   - Power spectral analysis of initial trials.
-  - Computing skin deformation gradient tensor from a marker grid.
+  - Compute skin deformation gradient tensor from a marker grid.
+  - Compute Biot & Green-Lagrangian strain from a marker grid.
+  - Transformation of the stimulation device (poker), to find the position
+     of its end point.
+  - Computation of distance from poke point to marker grid mesh.
   
 Working on:
 
-  - 3D visualization (using the VTK library).
-  - Computing sample-by-sample tensor changes.
+  - Final summary of results.
   
 == Installation ==
 
