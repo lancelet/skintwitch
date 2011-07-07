@@ -14,7 +14,7 @@ import javax.swing.SwingUtilities
 
 class DistancePlotActor(
     staticMarkers: Seq[Marker], markers: Seq[Marker], grid: MarkerGrid,
-    loadCallback: () => Unit, threshold: Double = 25.0 
+    loadCallback: () => Unit, threshold: Double = 10.0 
 ) extends Animated2DActor {
 
   private var sample: Int = 0
@@ -86,21 +86,23 @@ class DistancePlotActor(
   
   private def setDistancesInActor() {
     assert(SwingUtilities.isEventDispatchThread)
-    val distanceArray = new vtkDoubleArray {
-      SetJavaArray(distances.unzip._1.toArray)
-    }
-    val fieldData = new vtkFieldData {
-      AddArray(distanceArray)
-    }
-    val dataObject = new vtkDataObject {
-      SetFieldData(fieldData)
-    }
-    plotActor.AddDataObjectInput(dataObject)
-    plotActor.SetReferenceYValue(
+    if (distances.exists(_._2)) {
+      val distanceArray = new vtkDoubleArray {
+        SetJavaArray(distances.unzip._1.toArray)
+      }
+      val fieldData = new vtkFieldData {
+        AddArray(distanceArray)
+      }
+      val dataObject = new vtkDataObject {
+        SetFieldData(fieldData)
+      }
+      plotActor.AddDataObjectInput(dataObject)
+      plotActor.SetReferenceYValue(
         distances.filter(_._2).map(_._1).min + threshold)
-    plotActor.VisibilityOn
-    update()
-    loadCallback()
+      plotActor.VisibilityOn
+      update()
+      loadCallback()
+    }
   }
   
   private def update() {

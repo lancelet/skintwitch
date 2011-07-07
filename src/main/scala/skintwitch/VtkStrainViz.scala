@@ -153,13 +153,15 @@ class VtkStrainViz {
   }
   
   // action to open a TRC file
+  private var curDir: Option[File] = None
   private val openTrcAction = new Action("Open *.TRC file...") {
     accelerator = Some(KeyStroke.getKeyStroke("meta O"))
     def apply() {
-      val fc = new FileChooser(new File(".")) {
+      val fc = new FileChooser(curDir.getOrElse(new File("."))) {
         fileFilter = new FileNameExtensionFilter("TRC files", "trc")
       }
       if (fc.showOpenDialog(null) == FileChooser.Result.Approve) {
+        curDir = Some(fc.selectedFile.getParentFile)
         openTrcFile(fc.selectedFile.getCanonicalFile.getPath)
       }
     }
