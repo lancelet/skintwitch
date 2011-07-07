@@ -1,26 +1,54 @@
 package skintwitch
 
-import scala.collection.immutable._
-import net.miginfocom.swing.MigLayout
-import java.awt.{ BorderLayout, Dimension }
-import java.awt.event.{ ActionEvent, ActionListener }
-import java.io.{ File, FileWriter }
-import javax.swing.{ ImageIcon, JPanel, JToolBar, KeyStroke, SwingUtilities,
-  Timer }
-import javax.swing.filechooser.FileNameExtensionFilter
-import scala.swing._
-import scala.swing.event._
-import _root_.vtk.{ vtkRenderWindowPanel, vtkInteractorStyleTrackballCamera }
-import mocaputils.{ GapFiller, TRCReader }
-import skintwitch.vtk.{ AnimatedActor, BiotGradActor, MarkerGridActor,
-  PetersBiotGradActor}
-import skintwitch.rman.{ RManRender, RenderOptions }
-import simplex3d.math.double.Mat4
-import net.liftweb.json.{ DefaultFormats, parse }
-import net.liftweb.json.Serialization.write
-import scala.io.Source
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
+import java.awt.BorderLayout
+import java.awt.Dimension
+import java.io.File
+import java.io.FileWriter
 import java.io.FilenameFilter
+import scala.collection.immutable.Seq
+import scala.io.Source
+import scala.swing.event.ButtonClicked
+import scala.swing.event.Key
+import scala.swing.event.KeyPressed
+import scala.swing.event.ValueChanged
+import scala.swing.Action
+import scala.swing.BorderPanel
+import scala.swing.Button
+import scala.swing.FileChooser
+import scala.swing.Frame
+import scala.swing.Label
+import scala.swing.Menu
+import scala.swing.MenuBar
+import scala.swing.MenuItem
+import scala.swing.Slider
+import scala.swing.TextField
+import VtkStrainViz.JSONCamParams
+import javax.swing.filechooser.FileNameExtensionFilter
+import javax.swing.ImageIcon
+import javax.swing.JPanel
+import javax.swing.JToolBar
+import javax.swing.KeyStroke
+import javax.swing.SwingUtilities
+import javax.swing.Timer
+import mocaputils.GapFiller
+import mocaputils.TRCReader
+import net.liftweb.json.Serialization.write
+import net.liftweb.json.parse
+import net.liftweb.json.DefaultFormats
+import net.miginfocom.swing.MigLayout
+import skintwitch.rman.RManRender
+import skintwitch.rman.RenderOptions
+import skintwitch.vtk.AnimatedActor
+import skintwitch.vtk.MarkerGridActor
+import skintwitch.vtk.PetersBiotGradActor
 import skintwitch.vtk.PointerActor
+import vtk.Animated2DActor
+import _root_.vtk.vtkInteractorStyleTrackballCamera
+import _root_.vtk.vtkRenderWindowPanel
+import skintwitch.vtk.FrameActor
+import skintwitch.vtk.DistancePlotActor
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
@@ -30,6 +58,8 @@ class VtkStrainViz {
   // collection (mutable) of AnimatedActors (used so that we can update the
   //  current sample during animation)
   private val actors = scala.collection.mutable.Buffer.empty[AnimatedActor]
+  // collection of Animated2DActors
+  private val actors2d = scala.collection.mutable.Buffer.empty[Animated2DActor]
   
   // playback rate field
   private val playRateField: TextField = new TextField("1.0") {
@@ -80,6 +110,7 @@ class VtkStrainViz {
     reactions += {
       case ValueChanged(_) => {
         actors.par.map(_.setSample(value))
+        actors2d.par.map(_.setSample(value))
         vtkPanel.GetRenderer().ResetCameraClippingRange()
         vtkPanel.Render()
       }
@@ -298,6 +329,7 @@ class VtkStrainViz {
     // remove any previous VTK actors
     vtkPanel.GetRenderer.RemoveAllViewProps
     actors.clear
+    actors2d.clear
     
     timeSlider.enabled = true
     timeSlider.min = 0
@@ -306,8 +338,8 @@ class VtkStrainViz {
     playBtn.enabled = true
     
     // force fill markers and low-pass Butterworth filter
-    val markers = trcData.markers.map(GapFiller.fillGapsLerp(_).get).map(
-      _.butter2(5.0))
+    val markers = trcData.markers.filter(_.exists).
+      map(GapFiller.fillGapsLerp(_).get).map(_.butter2(5.0))
     
     // construct grid from markers
     grid = MarkerGrid.fromCRMarkers(markers)
@@ -340,6 +372,17 @@ class VtkStrainViz {
     val petersBiotGradActor = new PetersBiotGradActor(grid)
     actors += petersBiotGradActor
     petersBiotGradActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
+    
+    // add frame number actor
+    val frameActor = new FrameActor
+    actors2d += frameActor
+    frameActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
+    
+    // add distance plot actor
+    val distancePlotActor = new DistancePlotActor(pointerStaticMarkers,
+                                                  markers, grid)
+    actors2d += distancePlotActor
+    distancePlotActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
     // reset the camera
     vtkPanel.GetRenderer.ResetCamera

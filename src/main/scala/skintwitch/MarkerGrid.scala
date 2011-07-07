@@ -220,7 +220,9 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @param index sample point at which to take marker coordinates
    *  @return triangular mesh at the specified sample time */
   def diceToTrimesh(index: Int): TriMesh = {
+    // compute vertices
     val verts = rowMajor.map(_.co(index)).toIndexedSeq
+    // compute triangular faces
     def rowColToIndex(rc: (Int, Int)) = rc._2 + rc._1 * numCols
     val faceBuilder = new VectorBuilder[(Int, Int, Int)]
     faceBuilder.sizeHint(2 * (numRows - 1) * (numCols - 1))
@@ -241,7 +243,16 @@ trait MarkerGrid extends Grid[Marker] { self =>
       faceBuilder += triA
       faceBuilder += triB
     }
-    new TriMesh(verts, faceBuilder.result)
+    // compute texture coordinates: u goes along the columns of the grid,
+    //  while v goes along the rows
+    val texCoords = for {
+      row <- 0 until numRows
+      col <- 0 until numCols
+      s = row / (numRows - 1).toDouble
+      t = col / (numCols - 1).toDouble
+    } yield (s, t)
+    // return the build mesh
+    new TriMesh(verts, faceBuilder.result, Some(texCoords))
   }
   
 }
@@ -272,6 +283,8 @@ object MarkerGrid {
     // find min/max col and min/max row
     val cols = crMarkers.map(_.col)
     val rows = crMarkers.map(_.row)
+    require(!cols.isEmpty && !rows.isEmpty, 
+        "some row or column markers must be present")
     val (minCol, maxCol) = (cols.min, cols.max)
     val (minRow, maxRow) = (rows.min, rows.max)
 

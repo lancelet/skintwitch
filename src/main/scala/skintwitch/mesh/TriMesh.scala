@@ -3,8 +3,9 @@ package skintwitch.mesh
 import scala.collection.immutable._
 
 class TriMesh(
-  vertices: IndexedSeq[(Double, Double, Double)], 
-  faces: IndexedSeq[(Int, Int, Int)])
+  vertices: IndexedSeq[(Double, Double, Double)],
+  faces: IndexedSeq[(Int, Int, Int)],
+  texCoords: Option[IndexedSeq[(Double, Double)]] = None)
 {
   // check face indices are within the allowed range and unique within a
   //  triangle
@@ -16,19 +17,34 @@ class TriMesh(
     f._1 != f._3 &&
     f._2 != f._3
   ))
+  // check that, if texture coordinates are provided, there is one texture
+  //  coordinate per vertex
+  if (texCoords.isDefined) {
+    require(texCoords.get.length == vertices.length)
+  }
   
   /** A Tri belonging to a TriMesh. */
   private case class TriMeshTri(
     a: (Double, Double, Double),
     b: (Double, Double, Double),
-    c: (Double, Double, Double)) extends Tri
+    c: (Double, Double, Double),
+    ast: (Double, Double),
+    bst: (Double, Double),
+    cst: (Double, Double)) extends Tri
   
   /** IndexedSeq of tris within this TriMesh. */
   val tris: IndexedSeq[Tri] = new IndexedSeq[Tri] {
     val length = faces.length
     def apply(index: Int): Tri = {
       val face = faces(index)
-      TriMeshTri(vertices(face._1), vertices(face._2), vertices(face._3))
+      val st = if (texCoords.isDefined) {
+        val txc = texCoords.get
+        (txc(face._1), txc(face._2), txc(face._3))
+      } else {
+        ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))
+      }
+      TriMeshTri(vertices(face._1), vertices(face._2), vertices(face._3),
+                 st._1, st._2, st._3)
     }
   }
 
@@ -41,11 +57,18 @@ class TriMesh(
    *  precise distance testing as a second step.
    *
    *  @param p the point for which to find the shortest distance
-   *  @return the shortest distance from the mesh to point `p`, and the
-   *    point on the mesh at which the shortest distance occurs */
+   *  @return the shortest distance from the mesh to point `p`, the
+   *    point on the mesh at which the shortest distance occurs, and the
+   *    texture coordinates of the point */
   def distanceTo(p: (Double, Double, Double)): 
-  (Double, (Double, Double, Double)) =
-    tris.par.map(_.distanceTo(p)).seq.sortBy(_._1).head
+  (Double, (Double, Double, Double), (Double, Double)) = {
+    val closestPoints = for {
+      tri <- tris.par
+      (dist, xPoint) = tri.distanceTo(p)
+    } yield (dist, xPoint, tri)
+    val (dist, xPoint, tri) = closestPoints.seq.sortBy(_._1).head
+    (dist, xPoint, tri.texCoordsOfPoint(xPoint))
+  }
   
   /** Shortest signed distance between this mesh and a given point.
    * 
@@ -56,10 +79,18 @@ class TriMesh(
    *  distance is signed.
    *  
    *  @param p the point for which to find the signed distance
-   *  @return the shortest signed distance from the mesh to point `p`, and the
-   *    point on the mesh at which the shortest signed distance occurs */
+   *  @return the shortest signed distance from the mesh to point `p`, the
+   *    point on the mesh at which the shortest signed distance occurs, and
+   *    the texture coordinates of the point */
   def signedDistanceTo(p: (Double, Double, Double)):
-  (Double, (Double, Double, Double)) =
-    tris.par.map(_.signedDistanceTo(p)).seq.sortBy(x => math.abs(x._1)).head
+  (Double, (Double, Double, Double), (Double, Double)) = {
+    val closestPoints = for {
+      tri <- tris.par
+      (dist, xPoint) = tri.signedDistanceTo(p)
+    } yield (dist, xPoint, tri)
+    val (dist, xPoint, tri) = closestPoints.seq.sortBy(x => math.abs(x._1)).
+      head
+    (dist, xPoint, tri.texCoordsOfPoint(xPoint))
+  }
 
 }

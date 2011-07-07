@@ -15,6 +15,12 @@ trait Tri {
   val b: (Double, Double, Double)
   /** Vertex of the triangle. */
   val c: (Double, Double, Double)
+  /** Texture coordinates at `a`. */
+  val ast: (Double, Double)
+  /** Texture coordinates at `b`. */
+  val bst: (Double, Double)
+  /** Texture coordinates at `c`. */
+  val cst: (Double, Double)
 
   private lazy val abxac: V3 = (b - a) x (c - a)
   private lazy val n: V3 = abxac.normalized
@@ -70,6 +76,19 @@ trait Tri {
     val (udist, pContact) = distanceTo(p)
     val sign = math.signum((p - pContact) dot normal)
     (sign * udist, pContact)
+  }
+
+  /** Computes the linearly-interpolated texture coordinates of a point in the 
+   *  triangle.  The point should already have been projected to the plane of 
+   *  the triangle for correct results.
+   *  
+   *  @param p point in the plane of the triangle
+   *  @return texture coordinates `(s, t)` of the point */
+  def texCoordsOfPoint(p: (Double, Double, Double)): (Double, Double) = {
+    val bary = implicitly[V3](projectIntoBarycentric(p, true))
+    val svec = V3(ast._1, bst._1, cst._1)
+    val tvec = V3(ast._2, bst._2, cst._2)
+    (bary dot svec, bary dot tvec)
   }
   
   /** Computes the shortest distance between a point and the triangle.
