@@ -5,6 +5,7 @@ import mocaputils.Marker
 import skintwitch.MarkerGrid
 import vtk.{ vtkActor, vtkArrowSource, vtkDataArray, vtkDoubleArray, vtkPoints, 
   vtkPolyData, vtkPolyDataMapper, vtkTensorGlyph }
+import scala.collection.mutable.ArrayBuilder
 
 class PetersBiotGradActor(grid: MarkerGrid, scale: Double = 100.0) 
 extends AnimatedActor {
@@ -52,7 +53,8 @@ extends AnimatedActor {
   
   private def update() {
     points.Reset
-    tensors.Reset
+    val tensorArrayBuilder = new ArrayBuilder.ofDouble
+    tensorArrayBuilder.sizeHint(9 * grid.numRows * grid.numCols)
     val bg = grid.petersBiotGrad(sample)
     for {
       r <- 0 until grid.numRows
@@ -61,11 +63,12 @@ extends AnimatedActor {
       m = bg(r, c)
     } {
       points.InsertNextPoint(x, y, z)
-      tensors.InsertNextTuple9(
+      tensorArrayBuilder += (
         m(0, 0), m(0, 1), m(0, 2),
         m(1, 0), m(1, 1), m(1, 2),
         m(2, 0), m(2, 1), m(2, 2))
     }
+    tensors.SetJavaArray(tensorArrayBuilder.result)
     points.Modified
     tensors.Modified
   }
