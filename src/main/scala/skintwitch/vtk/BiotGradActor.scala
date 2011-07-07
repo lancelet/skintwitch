@@ -1,5 +1,6 @@
 package skintwitch.vtk
 
+import scala.collection.immutable._
 import mocaputils.Marker
 import skintwitch.MarkerGrid
 import vtk.{ vtkActor, vtkArrowSource, vtkDataArray, vtkDoubleArray, vtkPoints, 
@@ -19,7 +20,7 @@ extends AnimatedActor {
     GetPointData.SetTensors(tensors)
   }
   
-  def getActor(): vtkActor = {
+  def getActors(): Seq[vtkActor] = {
     update()
     /*
     val sphereSource = new vtkSphereSource {
@@ -46,7 +47,7 @@ extends AnimatedActor {
     val actor = new vtkActor {
       SetMapper(polyDataMapper)
     }
-    actor
+    Seq(actor)
   }
   
   def setSample(index: Int) {

@@ -9,8 +9,8 @@ object BuildSettings {
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization    := buildOrganization,
     scalaVersion    := buildScalaVersion,
-    version         := buildVersion,
-    offline         := true
+    version         := buildVersion
+    /*offline         := true*/
   )
 }
 

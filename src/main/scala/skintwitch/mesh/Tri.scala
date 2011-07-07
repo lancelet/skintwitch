@@ -59,6 +59,19 @@ trait Tri {
     (l1, l2, l3)
   }
   
+  /** Computes the "signed distance" between a point and the triangle.
+   *  
+   *  The normal to the triangle is found via the right-hand rule.  The
+   *  distance is positive if it lies on the outward-facing side of the
+   *  triangle, and negative if it lies on the inward-facing side.
+   */
+  def signedDistanceTo(p: (Double, Double, Double)):
+  (Double, (Double, Double, Double)) = {
+    val (udist, pContact) = distanceTo(p)
+    val sign = math.signum((p - pContact) dot normal)
+    (sign * udist, pContact)
+  }
+  
   /** Computes the shortest distance between a point and the triangle.
    *  
    *  @param p point for which to find the shortest distance

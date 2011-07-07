@@ -19,6 +19,8 @@ import simplex3d.math.double.Mat4
 import net.liftweb.json.{ DefaultFormats, parse }
 import net.liftweb.json.Serialization.write
 import scala.io.Source
+import java.io.FilenameFilter
+import skintwitch.vtk.PointerActor
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
@@ -257,6 +259,7 @@ class VtkStrainViz {
   private var trialName: String = null
   private var canonicalTrialName: String = null
   private def openTrcFile(fileName: String) {
+    // read the trial TRC data
     val trcData = TRCReader.read(fileName).fold (
       e => {
         println("ERROR READING %s" format fileName)
@@ -265,9 +268,29 @@ class VtkStrainViz {
       s => s
     )
     
+    // set the name of the trial
     canonicalTrialName = new File(fileName).getCanonicalPath
     trialName = new File(fileName).getName.dropRight(4)
     mainFrame.title = "VtkStrainViz - %s" format trialName
+    
+    // find and load the pointer trial
+    val path = new File(fileName).getParentFile
+    val ptrialFiles = path.listFiles(new FilenameFilter {
+      def accept(dir: File, name: String) = name.contains("pointer")
+    })
+    if (ptrialFiles.length > 1) {
+      println("more than one pointer trial found!")
+    } else if (ptrialFiles.length == 0) {
+      println("no pointer trial found!")
+    }
+    val pTrialTrc = TRCReader.read(ptrialFiles.head.getCanonicalPath).fold (
+      e => {
+        println("ERROR READING %s:" format ptrialFiles.head.getCanonicalPath)
+        println(e)
+        return
+      },
+      s => s
+    )
     
     trialfps = trcData.cameraRate
     updateTimer()
@@ -292,7 +315,19 @@ class VtkStrainViz {
     // add grid to the actors
     val mga = new MarkerGridActor(grid)
     actors += mga
-    vtkPanel.GetRenderer.AddActor(mga.getActor)
+    mga.getActors.map(vtkPanel.GetRenderer.AddActor(_))
+    
+    // add pointer to the actors
+    val pointerStaticGappedMarkers = Seq(
+      pTrialTrc.getMarker("middle"), pTrialTrc.getMarker("short"),
+      pTrialTrc.getMarker("med"), pTrialTrc.getMarker("long"),
+      pTrialTrc.getMarker("T6")
+    )
+    val pointerStaticMarkers = pointerStaticGappedMarkers.map(
+      GapFiller.fillGapsLerp(_).get)
+    val pointerActor = new PointerActor(pointerStaticMarkers, markers, grid)
+    actors += pointerActor
+    pointerActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
     // add Biot tensor to the actors
     /*
@@ -304,7 +339,7 @@ class VtkStrainViz {
     // add peters Biot tensor
     val petersBiotGradActor = new PetersBiotGradActor(grid)
     actors += petersBiotGradActor
-    vtkPanel.GetRenderer.AddActor(petersBiotGradActor.getActor)
+    petersBiotGradActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
     // reset the camera
     vtkPanel.GetRenderer.ResetCamera

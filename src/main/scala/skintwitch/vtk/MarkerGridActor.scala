@@ -1,5 +1,6 @@
 package skintwitch.vtk
 
+import scala.collection.immutable._
 import mocaputils.Marker
 import skintwitch.MarkerGrid
 import vtk.{ vtkActor, vtkGlyph3D, vtkPoints, vtkPolyData, vtkPolyDataMapper,
@@ -10,7 +11,7 @@ class MarkerGridActor(grid: MarkerGrid) extends AnimatedActor {
   private var sample = 0
   private var points = new vtkPoints
   
-  def getActor(): vtkActor = {
+  def getActors(): Seq[vtkActor] = {
     updatePoints()
     val polyData = new vtkPolyData {
       SetPoints(points)
@@ -28,7 +29,7 @@ class MarkerGridActor(grid: MarkerGrid) extends AnimatedActor {
     val actor = new vtkActor {
       SetMapper(polyDataMapper)
     }
-    actor
+    Seq(actor)
   }
 
   def setSample(index: Int) {

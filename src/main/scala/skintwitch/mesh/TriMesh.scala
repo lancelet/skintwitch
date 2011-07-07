@@ -44,7 +44,22 @@ class TriMesh(
    *  @return the shortest distance from the mesh to point `p`, and the
    *    point on the mesh at which the shortest distance occurs */
   def distanceTo(p: (Double, Double, Double)): 
-    (Double, (Double, Double, Double)) =
-      tris.par.map(_.distanceTo(p)).seq.sortBy(_._1).head
+  (Double, (Double, Double, Double)) =
+    tris.par.map(_.distanceTo(p)).seq.sortBy(_._1).head
+  
+  /** Shortest signed distance between this mesh and a given point.
+   * 
+   *  The signed distance is positive if a point lies on the outside of the
+   *  mesh, and negative if the point lies on the inside of the mesh (as
+   *  determined by right-hand surface normals).  The method finds the
+   *  absolute shortest distance between the point and the grid, but the
+   *  distance is signed.
+   *  
+   *  @param p the point for which to find the signed distance
+   *  @return the shortest signed distance from the mesh to point `p`, and the
+   *    point on the mesh at which the shortest signed distance occurs */
+  def signedDistanceTo(p: (Double, Double, Double)):
+  (Double, (Double, Double, Double)) =
+    tris.par.map(_.signedDistanceTo(p)).seq.sortBy(x => math.abs(x._1)).head
 
 }
