@@ -126,6 +126,17 @@ trait MarkerGrid extends Grid[Marker] { self =>
   /** Computes the rate of the Biot strain tensor using the Peters1987 method.
    */
   def petersBiotGrad(sample: Int): Grid[Matrix[Double]] = {
+    synchronized {
+      petersBiotGradCache.getOrElse(sample, {
+        val pbg = petersBiotGrad_worker(sample)
+        petersBiotGradCache(sample) = pbg
+        pbg
+      })
+    }
+  }
+  private val petersBiotGradCache = 
+    scala.collection.mutable.Map.empty[Int, Grid[Matrix[Double]]]
+  private def petersBiotGrad_worker(sample: Int): Grid[Matrix[Double]] = {
     val period = 1.0 / self(0, 0).fs
     val s0 = if (sample > 0) sample - 1 else 1
     petersBiot(s0, sample).map(_ / period)
