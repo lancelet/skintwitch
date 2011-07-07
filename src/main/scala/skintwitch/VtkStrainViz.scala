@@ -268,6 +268,8 @@ class VtkStrainViz {
     setMinimumSize(new Dimension(0, 0))
     setPreferredSize(new Dimension(0, 0))    
     setInteractorStyle(new vtkInteractorStyleTrackballCamera)
+    GetRenderWindow.LineSmoothingOn
+    GetRenderWindow.PolygonSmoothingOn
   }
   private val vtkHostPanel = new JPanel(new BorderLayout()) {
     add(vtkPanel, BorderLayout.CENTER)
@@ -380,7 +382,8 @@ class VtkStrainViz {
     
     // add distance plot actor
     val distancePlotActor = new DistancePlotActor(pointerStaticMarkers,
-                                                  markers, grid)
+                                                  markers, grid,
+                                                  vtkPanel.Render)
     actors2d += distancePlotActor
     distancePlotActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     

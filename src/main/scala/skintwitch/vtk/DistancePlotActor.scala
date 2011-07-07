@@ -1,5 +1,6 @@
 package skintwitch.vtk
 
+import scala.actors.Futures
 import scala.collection.immutable._
 import vtk.vtkActor2D
 import vtk.vtkXYPlotActor
@@ -9,16 +10,35 @@ import skintwitch.MarkerGrid
 import mocaputils.VirtualMarker
 import vtk.vtkFieldData
 import vtk.vtkDataObject
+import javax.swing.SwingUtilities
 
 class DistancePlotActor(
     staticMarkers: Seq[Marker], markers: Seq[Marker], grid: MarkerGrid,
-    threshold: Double = 25.0
+    loadCallback: () => Unit, threshold: Double = 25.0 
 ) extends Animated2DActor {
 
   private var sample: Int = 0
   
+  private val plotActor = new vtkXYPlotActor {
+    SetYRange(-50, 50)
+    ShowReferenceXLineOn
+    SetWidth(0.3)
+    SetHeight(0.2)
+    GetAxisTitleTextProperty.ItalicOff
+    GetAxisLabelTextProperty.ItalicOff
+    SetXTitle("")
+    SetYTitle("")
+    SetXLabelFormat("")
+    SetYLabelFormat("")
+    SetPosition(0.01, 0.05)
+    GetProperty.SetLineWidth(1.5)
+    ShowReferenceYLineOn
+    VisibilityOff
+  }
+ 
+  
   // distance at each sample index
-  private val distances = {
+  private def getDistances() = {
     // construct markers
     def getMarker(name: String) = markers.find(_.name == name).get 
     val mLong = getMarker("long")
@@ -43,39 +63,37 @@ class DistancePlotActor(
       (dist, xPoint, st) = triMesh.signedDistanceTo(mTip.co(i))
     } yield dist
   }
-  
-  private val plotActor = new vtkXYPlotActor {
-    private val distanceArray = new vtkDoubleArray {
-      SetJavaArray(distances.toArray)
-    }
-    private val fieldData = new vtkFieldData {
-      AddArray(distanceArray)
-    }
-    private val dataObject = new vtkDataObject {
-      SetFieldData(fieldData)
-    }
-    AddDataObjectInput(dataObject)
-    SetYRange(-50, 50)
-    ShowReferenceXLineOn
-    SetWidth(0.3)
-    SetHeight(0.2)
-    GetAxisTitleTextProperty.ItalicOff
-    GetAxisLabelTextProperty.ItalicOff
-    SetXTitle("")
-    SetYTitle("")
-    SetXLabelFormat("")
-    SetYLabelFormat("")
-    SetPosition(0.01, 0.05)
-    GetProperty.SetLineWidth(1.5)
-    ShowReferenceYLineOn
-    SetReferenceYValue(distances.min + threshold)
+  private var distances: Seq[Double] = Seq.empty[Double]
+  private val distFuture = Futures.future {
+    distances = getDistances
+    SwingUtilities.invokeLater(new Runnable {
+      def run() = setDistancesInActor()
+    })
   }
-  
+    
   def getActors(): Seq[vtkActor2D] = Seq(plotActor)
   
   def setSample(index: Int) {
     sample = index
     update()
+  }
+  
+  private def setDistancesInActor() {
+    assert(SwingUtilities.isEventDispatchThread)
+    val distanceArray = new vtkDoubleArray {
+      SetJavaArray(distances.toArray)
+    }
+    val fieldData = new vtkFieldData {
+      AddArray(distanceArray)
+    }
+    val dataObject = new vtkDataObject {
+      SetFieldData(fieldData)
+    }
+    plotActor.AddDataObjectInput(dataObject)
+    plotActor.SetReferenceYValue(distances.min + threshold)
+    plotActor.VisibilityOn
+    update()
+    loadCallback()
   }
   
   private def update() {
