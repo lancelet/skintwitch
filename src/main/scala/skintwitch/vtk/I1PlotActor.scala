@@ -15,7 +15,7 @@ import vtk.vtkTextActor
 
 class I1PlotActor(
   staticMarkers: Seq[Marker], markers: Seq[Marker], grid: MarkerGrid,
-  loadCallback: () => Unit, threshold: Double = 10.0, stepback: Int = 15
+  loadCallback: () => Unit, threshold: Double = 10.0, stepback: Int = 30
 ) extends Animated2DActor {
 
   import I1PlotActor._
