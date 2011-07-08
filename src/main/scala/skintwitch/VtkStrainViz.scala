@@ -49,6 +49,7 @@ import _root_.vtk.vtkInteractorStyleTrackballCamera
 import _root_.vtk.vtkRenderWindowPanel
 import skintwitch.vtk.FrameActor
 import skintwitch.vtk.DistancePlotActor
+import scala.swing.Dialog
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
@@ -297,7 +298,9 @@ class VtkStrainViz {
     // read the trial TRC data
     val trcData = TRCReader.read(fileName).fold (
       e => {
-        println("ERROR READING %s" format fileName)
+        Dialog.showMessage(null,
+          "Error opening file \"%s\"\n%s" format (fileName, e),
+          "Error", Dialog.Message.Error)
         return
       },
       s => s
@@ -314,14 +317,21 @@ class VtkStrainViz {
       def accept(dir: File, name: String) = name.contains("pointer")
     })
     if (ptrialFiles.length > 1) {
-      println("more than one pointer trial found!")
+      Dialog.showMessage(null,
+        "More than one pointer trial found.",
+        "Error", Dialog.Message.Error)
+      return
     } else if (ptrialFiles.length == 0) {
-      println("no pointer trial found!")
+      Dialog.showMessage(null,
+        "No pointer trial found.",
+        "Error", Dialog.Message.Error)
     }
     val pTrialTrc = TRCReader.read(ptrialFiles.head.getCanonicalPath).fold (
       e => {
-        println("ERROR READING %s:" format ptrialFiles.head.getCanonicalPath)
-        println(e)
+        Dialog.showMessage(null,
+          "Error opening file \"%s\"\n%s".
+            format(ptrialFiles.head.getCanonicalPath, e),
+          "Error", Dialog.Message.Error)
         return
       },
       s => s
