@@ -7,7 +7,7 @@ import vtk.{ vtkActor, vtkArrowSource, vtkDataArray, vtkDoubleArray, vtkPoints,
   vtkPolyData, vtkPolyDataMapper, vtkTensorGlyph }
 import scala.collection.mutable.ArrayBuilder
 
-class PetersBiotGradActor(grid: MarkerGrid, scale: Double = 100.0) 
+class BiotRateActor(grid: MarkerGrid, scale: Double = 100.0) 
 extends AnimatedActor {
 
   private var sample = 0
@@ -55,7 +55,7 @@ extends AnimatedActor {
     points.Reset
     val tensorArrayBuilder = new ArrayBuilder.ofDouble
     tensorArrayBuilder.sizeHint(9 * grid.numRows * grid.numCols)
-    val bg = grid.petersBiotGrad(sample)
+    val bg = grid.biotRate(sample)
     for {
       r <- 0 until grid.numRows
       c <- 0 until grid.numCols

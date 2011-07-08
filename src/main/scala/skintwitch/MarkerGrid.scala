@@ -8,62 +8,13 @@ import math.abs
 import skintwitch.mesh.TriMesh
 
 trait MarkerGrid extends Grid[Marker] { self =>
-  
-  /** Computes the deformation gradient tensor over the grid of markers.
-   * 
-   *  At each vertex, every triad of markers is queried to find the deformation
-   *  gradient tensor (using the `TensorUtils.dgtri` method), and the mean is
-   *  found.
-   *  
-   *  @see Grid.getConnectedTris
-   *  
-   *  @param s0 sample representing the "undeformed" state
-   *  @param s sample representing the "deformed" state
-   *  @param undeformedCoordSys `true` if the tensor should be expressed in the
-   *    coordinate system of the `s0` (undeformed) markers, or `false` if the 
-   *    tensor should be expressed in the coordinate system of the `s` 
-   *    (deformed) markers
-   *  @return new grid with the deformation gradient tensor computed at each
-   *    vertex */
-  def deformationGrad(s0: Int, s: Int, undeformedCoordSys: Boolean = true): 
-  Grid[Matrix[Double]] =
-    new Grid[Matrix[Double]] {
-      val numRows = self.numRows
-      val numCols = self.numCols
-      def apply(row: Int, col: Int) = {
-        val tris = self.getConnectedTriElements(row, col)
-        val tensors = tris.map(t => TensorUtils.dgtri(
-          (t._1.xs(s0), t._1.ys(s0), t._1.zs(s0)),
-          (t._2.xs(s0), t._2.ys(s0), t._2.zs(s0)),
-          (t._3.xs(s0), t._3.ys(s0), t._3.zs(s0)),
-          (t._1.xs(s),  t._1.ys(s),  t._1.zs(s)),
-          (t._2.xs(s),  t._2.ys(s),  t._2.zs(s)),
-          (t._3.xs(s),  t._3.ys(s),  t._3.zs(s)),
-          undeformedCoordSys
-        ))
-        TensorUtils.mean(tensors)
-      }
-    }
-  
-  /** Computes the gradient of the deformation gradient tensor over the
-   *  grid of markers.  A simple linear finite difference approximation is 
-   *  used.
-   *  
-   *  @param sample sample at which to compute the tensor
-   *  @return new grid of the computed tensor */
-  def deformationGradGrad(sample: Int): Grid[Matrix[Double]] = {
-    val period = 1.0 / self(0, 0).fs
-    val s0 = if (sample > 0) sample - 1 else 1
-    val coordSys = if (sample > 0) false else true
-    deformationGrad(s0, sample, coordSys).map(_ / period)
-  }
-  
+      
   /** Computes the deformation gradient tensor using the Peters1987 method.
    *  
    *  @param s0 un-deformed index
    *  @param s deformed index
    *  @return new grid with computed deformation gradient tensor */
-  def petersF(s0: Int, s: Int): Grid[Matrix[Double]] = 
+  def dgtensor(s0: Int, s: Int): Grid[Matrix[Double]] = 
     new Grid[Matrix[Double]]{
       val numRows = self.numRows
       val numCols = self.numCols
@@ -71,8 +22,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
         val adj = self.getFullAdjacent(row, col)
         val qu = adj.map(rc => self(rc._1, rc._2).co(s0))
         val qd = adj.map(rc => self(rc._1, rc._2).co(s))
-        TensorUtils.peters(self(row, col).co(s0), qu,
-                           self(row, col).co(s), qd)
+        TensorUtils.dgtensor(self(row, col).co(s0), qu,
+                             self(row, col).co(s), qd)
       }
     }
   
@@ -81,42 +32,15 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  
    *  @param sample sample at which to compute the tensor
    *  @return new grid of the computed tensor */
-  def petersGradF(sample: Int): Grid[Matrix[Double]] = {
+  def dgtensorRate(sample: Int): Grid[Matrix[Double]] = {
     val period = 1.0 / self(0, 0).fs
     val s0 = if (sample > 0) sample - 1 else 1
-    petersF(s0, sample).map(_ / period)
-  }
-  
-  /** Computes the Biot strain tensor over the grid of markers.
-   *
-   *  @param s0 undeformed sample
-   *  @param s deformed sample
-   *  @param undeformedCoordSys
-   *  @return new grid of the Biot strain tensor */
-  def biot(s0: Int, s: Int, undeformedCoordSys: Boolean = true):
-  Grid[Matrix[Double]] = {
-    val fGrid = deformationGrad(s0, s, undeformedCoordSys)
-    fGrid.map(e => {
-      val (r, u) = TensorUtils.polarDecomp(e)
-      u - DenseMatrix.eye[Double](3)
-    })
-  }
-  
-  /** Computes the gradient of the Biot strain tensor over the grid of
-   *  markers.  A simple linear finite different approximation is used.
-   *  
-   *  @param sample sample at which to compute the tensor
-   *  @return new grid of the computed tensor */
-  def biotGrad(sample: Int): Grid[Matrix[Double]] = {
-    val period = 1.0 / self(0, 0).fs
-    val s0 = if (sample > 0) sample - 1 else 1
-    val coordSys = if (sample > 0) false else true
-    biot(s0, sample, coordSys).map(_ / period)
+    dgtensor(s0, sample).map(_ / period)
   }
   
   /** Computes the Biot strain tensor using the Peters1987 method. */
-  def petersBiot(s0: Int, s: Int): Grid[Matrix[Double]] = {
-    val fGrid = petersF(s0, s)
+  def biot(s0: Int, s: Int): Grid[Matrix[Double]] = {
+    val fGrid = dgtensor(s0, s)
     fGrid.map(e => {
       val (r, u) = TensorUtils.polarDecomp(e)
       u - DenseMatrix.eye[Double](3)
@@ -125,21 +49,21 @@ trait MarkerGrid extends Grid[Marker] { self =>
   
   /** Computes the rate of the Biot strain tensor using the Peters1987 method.
    */
-  def petersBiotGrad(sample: Int): Grid[Matrix[Double]] = {
+  def biotRate(sample: Int): Grid[Matrix[Double]] = {
     synchronized {
-      petersBiotGradCache.getOrElse(sample, {
-        val pbg = petersBiotGrad_worker(sample)
-        petersBiotGradCache(sample) = pbg
+      biotRateCache.getOrElse(sample, {
+        val pbg = biotRate_worker(sample)
+        biotRateCache(sample) = pbg
         pbg
       })
     }
   }
-  private val petersBiotGradCache = 
+  private val biotRateCache = 
     scala.collection.mutable.Map.empty[Int, Grid[Matrix[Double]]]
-  private def petersBiotGrad_worker(sample: Int): Grid[Matrix[Double]] = {
+  private def biotRate_worker(sample: Int): Grid[Matrix[Double]] = {
     val period = 1.0 / self(0, 0).fs
     val s0 = if (sample > 0) sample - 1 else 1
-    petersBiot(s0, sample).map(_ / period)
+    biot(s0, sample).map(_ / period)
   }
   
   /** Computes the strain energy density at each grid point, assuming an
@@ -158,7 +82,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @return grid of strain energy density */
   def incompNeoHookeanSED(s0: Int, s: Int, e: Double): 
   Grid[Double] = {
-    petersF(s0, s).map { f =>
+    dgtensor(s0, s).map { f =>
       // get the principal stretches from the deformation gradient tensor
       val (r, u) = TensorUtils.polarDecomp(f)
       val prin = TensorUtils.principalComp(u)

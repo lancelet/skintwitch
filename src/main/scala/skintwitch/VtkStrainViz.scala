@@ -42,7 +42,7 @@ import skintwitch.rman.RManRender
 import skintwitch.rman.RenderOptions
 import skintwitch.vtk.AnimatedActor
 import skintwitch.vtk.MarkerGridActor
-import skintwitch.vtk.PetersBiotGradActor
+import skintwitch.vtk.BiotRateActor
 import skintwitch.vtk.PointerActor
 import vtk.Animated2DActor
 import _root_.vtk.vtkInteractorStyleTrackballCamera
@@ -365,17 +365,10 @@ class VtkStrainViz {
     actors += pointerActor
     pointerActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
-    // add Biot tensor to the actors
-    /*
-    val biotGradActor = new BiotGradActor(grid)
-    actors += biotGradActor
-    vtkPanel.GetRenderer.AddActor(biotGradActor.getActor)
-    */
-    
-    // add peters Biot tensor
-    val petersBiotGradActor = new PetersBiotGradActor(grid)
-    actors += petersBiotGradActor
-    petersBiotGradActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
+    // add Biot rate tensor
+    val biotRateActor = new BiotRateActor(grid)
+    actors += biotRateActor
+    biotRateActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
     // add frame number actor
     val frameActor = new FrameActor
