@@ -133,7 +133,7 @@ class BandwidthAnalysis extends Logged {
         }
         
         // save strain energy density vs time plot
-        plotSEDvsTime(filledMarkers, sedWriter, trialName)
+        plotI1vsTime(filledMarkers, sedWriter, trialName)
       }
     )
   }
@@ -141,37 +141,36 @@ class BandwidthAnalysis extends Logged {
   writer.close
   sedWriter.close
 
-  private def plotSEDvsTime(filledMarkers: Seq[Marker], w: Writer,
+  private def plotI1vsTime(filledMarkers: Seq[Marker], w: Writer,
     trialName: String) 
   {
     val nSamples = filledMarkers(0).co.length
     val filtMarkers = filledMarkers.map(_.butter2(5.0))
     val grid = MarkerGrid.fromCRMarkers(filtMarkers)
-    val e = 34.0e6  // Young's modulus, from Grady 2009; avg of W2 & W3
-    // compute SED in parallel, then re-order by index
-    val sed = (1 until nSamples).par.map((index: Int) =>
-      (index, grid.avgIncompNeoHookeanSED(0, index, e))).seq.
+    // compute I1 in parallel, then re-order by index
+    val i1 = (1 until nSamples).par.map((index: Int) =>
+      (index, grid.avgLCauchyGreenI1(0, index))).seq.
       sortBy(_._1).map(_._2)
     // dataset
     val dataSet = new XYDataset with StaticDataset {
-      val series = Vector(TimeSampledSeries("W", sed.toIndexedSeq))
+      val series = Vector(TimeSampledSeries("W", i1.toIndexedSeq))
     }
     // plot
     val chart = ChartFactory.createXYLineChart(
-      "", "Sample", "Avg SED (J/m^3)", dataSet,
+      "", "Sample", "Avg I1", dataSet,
       PlotOrientation.VERTICAL, false, true, false
     )
     WhiteChartTheme(chart)
-    PlotToPDF.save(new File("%s/plots/%s_sed.pdf" format (outDir, trialName)),
+    PlotToPDF.save(new File("%s/plots/%s_i1.pdf" format (outDir, trialName)),
       chart, 250, 125)
     // save plot to writer
-    val shortCap = "SED for %s" format sTeX(trialName)
-    val caption = "Average strain  energy density (assuming a homogeneous, " +
-    		  "incompressible, neo-Hookean behaviour) for trial " +
+    val shortCap = "I1 for %s" format sTeX(trialName)
+    val caption = "Average first invariant of the left Cauchy-Green " +
+                  "deformation tensor for trial " +
                   "%s" format sTeX(trialName)
     w.write("\\begin{figure}[H]\n")
     w.write("\\includegraphics[width=\\columnwidth]" +
-      "{../output/plots/%s_sed.pdf}\n" format trialName)
+      "{../output/plots/%s_i1.pdf}\n" format trialName)
     w.write("\\caption[%s]{%s}\n" format(shortCap, caption))
     w.write("\\end{figure}\n")
     w.flush

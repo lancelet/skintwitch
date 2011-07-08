@@ -66,21 +66,14 @@ trait MarkerGrid extends Grid[Marker] { self =>
     biot(s0, sample).map(_ / period)
   }
   
-  /** Computes the strain energy density at each grid point, assuming an
-   *  incompressible, Neo-Hookean material.
+  /** Computes the first invariant of the Left Cauchy-Green deformation
+   *  tensor.  This is equivalent to the sum of the squares of the principal
+   *  stretches.
    *  
-   *  The equation used is: `W = C_1 * (I_1 - 3)`, where `I_1` is the sum of
-   *  the squares of the principal stretches, and `C_1` is a material constant.
-   *  `C_1` is equal to half of the shear modulus `mu`, and for an
-   *  incompressible, isotropic material: `mu = E / (2 * (1 + nu))`, where
-   *  `E` is the Young's Modulus and `nu = 0.5` is the Poisson's Ratio.
-   *  Expanding this relationship gives: `C_1 = E / 6`.
-   *  
-   *  @param s0 un-deformed index
+   *  @param s0 un-deformed (reference) index
    *  @param s deformed index
-   *  @param e Young's Modulus of the material
-   *  @return grid of strain energy density */
-  def incompNeoHookeanSED(s0: Int, s: Int, e: Double): 
+   *  @return first invariant */
+  def lCauchyGreenI1(s0: Int, s: Int): 
   Grid[Double] = {
     dgtensor(s0, s).map { f =>
       // get the principal stretches from the deformation gradient tensor
@@ -102,27 +95,26 @@ trait MarkerGrid extends Grid[Marker] { self =>
       val (l1, l2) = (compStretches(0), compStretches(1))
       val l3 = 1.0 / (l1 * l2)
       
-      // finally compute the strain energy density
-      val i1 = l1 * l1 + l2 * l2 + l3 * l3
-      val w = (e / 6.0) * (i1 - 3.0)
-      w
+      // finally compute the first invariant of the left Cauchy-Green tensor
+      //  (which is the sum of the squares of the principal stretches)
+      l1 * l1 + l2 * l2 + l3 * l3
     }
   }
   
-  /** Computes the average strain energy density over all grid points, assuming
-   *  an incompressible, Neo-Hookean material.
+  /** Computes the average first invariant of the left Cauchy Green deformation
+   *  tensor over the grid.  This is equivalent to the average sum of the
+   *  squares of the principal stretches.
    *  
-   *  @param s0 un-deformed index
+   *  @param s0 un-deformed (reference) index
    *  @param s deformed index
-   *  @param e Young's Modulus of the material
-   *  @return average strain energy density */
-  def avgIncompNeoHookeanSED(s0: Int, s: Int, e: Double): Double = {
-    val sedGrid = incompNeoHookeanSED(s0, s, e)
-    val sedSum = (for {
-      row <- 0 until sedGrid.numRows
-      col <- 0 until sedGrid.numCols
-    } yield sedGrid(row, col)).sum
-    sedSum / (sedGrid.numRows * sedGrid.numCols).toDouble
+   *  @return average first invariant */
+  def avgLCauchyGreenI1(s0: Int, s: Int): Double = {
+    val i1Grid = lCauchyGreenI1(s0, s)
+    val i1Sum = (for {
+      row <- 0 until i1Grid.numRows
+      col <- 0 until i1Grid.numCols
+    } yield i1Grid(row, col)).sum
+    i1Sum / (i1Grid.numRows * i1Grid.numCols).toDouble
   }
   
   /** Finds the average position (unweighted centroid) of the markers at a 
