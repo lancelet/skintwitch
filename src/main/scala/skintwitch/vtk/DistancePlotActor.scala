@@ -11,6 +11,7 @@ import mocaputils.VirtualMarker
 import vtk.vtkFieldData
 import vtk.vtkDataObject
 import javax.swing.SwingUtilities
+import vtk.vtkTextActor
 
 class DistancePlotActor(
     staticMarkers: Seq[Marker], markers: Seq[Marker], grid: MarkerGrid,
@@ -19,11 +20,18 @@ class DistancePlotActor(
 
   private var sample: Int = 0
   
+  private val lblActor = new vtkTextActor {
+    GetPositionCoordinate.SetCoordinateSystemToNormalizedViewport
+    SetInput("Computing distance data...")
+    SetPosition(0.01, 0.05)
+    GetProperty.SetColor(0.4, 0.4, 0.4)
+  }
+  
   private val plotActor = new vtkXYPlotActor {
     SetYRange(-50, 50)
     ShowReferenceXLineOn
     SetWidth(0.3)
-    SetHeight(0.2)
+    SetHeight(0.15)
     GetAxisTitleTextProperty.ItalicOff
     GetAxisLabelTextProperty.ItalicOff
     SetXTitle("")
@@ -32,6 +40,7 @@ class DistancePlotActor(
     SetYLabelFormat("")
     SetPosition(0.01, 0.05)
     GetProperty.SetLineWidth(1.5)
+    GetProperty.SetColor(0.6, 0.6, 0.6)
     ShowReferenceYLineOn
     VisibilityOff
   }
@@ -77,7 +86,7 @@ class DistancePlotActor(
     })
   }
     
-  def getActors(): Seq[vtkActor2D] = Seq(plotActor)
+  def getActors(): Seq[vtkActor2D] = Seq(plotActor, lblActor)
   
   def setSample(index: Int) {
     sample = index
@@ -101,6 +110,9 @@ class DistancePlotActor(
         distances.filter(_._2).map(_._1).min + threshold)
       plotActor.VisibilityOn
       update()
+      lblActor.SetInput("Distance")
+      lblActor.SetPosition(0.01 + 0.3 - 0.15,
+                           0.05 + 0.15 - 0.05)
       loadCallback()
     }
   }

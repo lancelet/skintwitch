@@ -51,6 +51,7 @@ import skintwitch.vtk.FrameActor
 import skintwitch.vtk.DistancePlotActor
 import scala.swing.Dialog
 import java.awt.Cursor
+import skintwitch.vtk.I1PlotActor
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
@@ -399,6 +400,13 @@ class VtkStrainViz {
                                                   vtkPanel.Render)
     actors2d += distancePlotActor
     distancePlotActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
+    
+    // add I1 plot actor
+    val i1PlotActor = new I1PlotActor(pointerStaticMarkers,
+                                      markers, grid,
+                                      vtkPanel.Render)
+    actors2d += i1PlotActor
+    i1PlotActor.getActors.map(vtkPanel.GetRenderer.AddActor(_))
     
     // reset the camera
     vtkPanel.GetRenderer.ResetCamera
