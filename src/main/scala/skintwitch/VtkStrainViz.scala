@@ -50,6 +50,7 @@ import _root_.vtk.vtkRenderWindowPanel
 import skintwitch.vtk.FrameActor
 import skintwitch.vtk.DistancePlotActor
 import scala.swing.Dialog
+import java.awt.Cursor
 
 class VtkStrainViz {
   assert(SwingUtilities.isEventDispatchThread)
@@ -306,6 +307,9 @@ class VtkStrainViz {
       s => s
     )
     
+    // set a busy cursor
+    mainFrame.cursor = new Cursor(Cursor.WAIT_CURSOR)
+    
     // set the name of the trial
     canonicalTrialName = new File(fileName).getCanonicalPath
     trialName = new File(fileName).getName.dropRight(4)
@@ -320,11 +324,13 @@ class VtkStrainViz {
       Dialog.showMessage(null,
         "More than one pointer trial found.",
         "Error", Dialog.Message.Error)
+      mainFrame.cursor = new Cursor(Cursor.DEFAULT_CURSOR)
       return
     } else if (ptrialFiles.length == 0) {
       Dialog.showMessage(null,
         "No pointer trial found.",
         "Error", Dialog.Message.Error)
+      mainFrame.cursor = new Cursor(Cursor.DEFAULT_CURSOR)
     }
     val pTrialTrc = TRCReader.read(ptrialFiles.head.getCanonicalPath).fold (
       e => {
@@ -332,6 +338,7 @@ class VtkStrainViz {
           "Error opening file \"%s\"\n%s".
             format(ptrialFiles.head.getCanonicalPath, e),
           "Error", Dialog.Message.Error)
+        mainFrame.cursor = new Cursor(Cursor.DEFAULT_CURSOR)
         return
       },
       s => s
@@ -345,6 +352,7 @@ class VtkStrainViz {
     actors.clear
     actors2d.clear
     
+    // set up the time slider and play button
     timeSlider.enabled = true
     timeSlider.min = 0
     timeSlider.value = 0
@@ -394,6 +402,9 @@ class VtkStrainViz {
     
     // reset the camera
     vtkPanel.GetRenderer.ResetCamera
+    
+    // reset to the default cursor
+    mainFrame.cursor = new Cursor(Cursor.DEFAULT_CURSOR)
     
     // call for a render
     vtkPanel.Render
