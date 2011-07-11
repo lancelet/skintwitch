@@ -8,11 +8,11 @@ import mocaputils.Marker
 import java.io.File
 import mocaputils.VirtualMarker
 
-/** A trial; encompassing much of the processing require for an individual
+/** A trial; encompassing much of the processing required for an individual
  *  trial.
  *  
  *  @param in input trial data
- *  @param refSampleOverride optional override of the reference sample
+ *  @param refSampleOverride optional override of the reference sample index
  *  @param cutoffFreq cutoff frequency at which to filter the trial (low-pass,
  *    forward-reverse, second-order Butterworth filter) (in Hz)
  *  @param threshold value to add to the minimum distance that the marker
@@ -82,6 +82,28 @@ case class Trial(
     } else {
       cand
     }  
+  }
+  
+  // compute the grid average of the first invariant of the left Cauchy-Green 
+  //  Deformation tensor at each time sample.  this is computed over all
+  //  samples, but only the samples after the poke are valid.
+  val i1: IndexedSeq[Double] = for {
+    i <- 0 until nSamples
+  } yield markerGrid.avgLCauchyGreenI1(refSample, i)
+  
+  // compute the maximum response sample.  this is the first peak in the
+  //  i1 values following the poke
+  val maxResponseSample: Int = {
+    // i1dot is the finite difference of successive i1 values
+    val i1dot = for {
+      (x0, x1) <- i1 zip (i1.tail)
+      delta = x1 - x0
+    } yield delta
+    // firstPositive is when i1dot first becomes positive after the reference
+    //  sample
+    val firstPositive = i1dot.indexWhere(_ > 0, refSample)
+    // now find where i1dot becomes negative after firstPositive
+    i1dot.indexWhere(_ < 0, firstPositive)
   }
   
 }

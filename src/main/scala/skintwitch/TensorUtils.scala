@@ -5,7 +5,8 @@ import scalala.library.Library.normalize
 import scalala.library.LinearAlgebra.{ cross, eig, inv, svd }
 import scalala.scalar.Complex
 import scalala.tensor.{ ::, Matrix }
-import scalala.tensor.dense.{ DenseMatrix, DenseVector }
+import scalala.tensor.dense.{ DenseMatrix, DenseVector, DenseVectorCol,
+  DenseVectorRow }
 
 object TensorUtils {
   
@@ -157,6 +158,76 @@ object TensorUtils {
                         Array(0, 0, eigs(2)._1)  /* 3rd prin stretch */)
     val Umod = Q * L * inv(Q)
     r * Umod
+  }
+  
+  /** Computes the normal to a cloud of points.
+   *  
+   *  Given a cloud of points, `q`, and a central point, `p`, this method
+   *  finds the average normal vector.  The method uses a small subset of the
+   *  computation of the deformation gradient tensor.
+   *
+   *  @see dgtensor
+   *  @param p central point
+   *  @param q cloud of points (not including `p`)
+   *  @return average normal vector */
+  def calcNormal(p: (Double, Double, Double),
+                 q: Seq[(Double, Double, Double)]): (Double, Double, Double) =
+  {
+    implicit def tupleToColVector(x: (Double, Double, Double)) =
+      DenseVectorCol(x._1, x._2, x._3)
+      
+    val x = q.map(_ - p)
+    val xbar = x.reduce(_ + _) / x.length.toDouble
+    val xbarOP = xbar * xbar.t
+    val x00 = (for {
+      xitem <- x
+    } yield ((xitem * xitem.t) - xbarOP)).reduce(_ + _) / x.length.toDouble
+    //val (re, im, vm) = eig(x00)
+    //val eigs = re.toArray zip (for (c <- 0 until vm.numCols) yield vm(::, c))
+    val eigs = principalComp(x00)
+    assert(eigs.length == 3)
+    val n = normalize(eigs.minBy(_._1)._2, 2)
+    (n(0), n(1), n(2))
+  }
+
+  /** Projects a 3D (3x3) tensor to a 2D (2x2) tensor.
+   *
+   *  The 2D coordinate system, with basis vectors `e1` and `e2` is defined
+   *  by:
+   *  {{{
+   *  e1 = normalize(uvec - uvec dot normal)
+   *  e2 = normalize(vvec - vvec dot normal)
+   *  e3 = e1 x e2
+   *  }}}
+   *  The `e3` component is removed by the method.
+   *
+   *  @param normal normal vector of the 2D plane in the 3D system
+   *  @param uvec vector along the x-axis of the 2D system (not necessarily
+   *    in the plane defined by `normal`)
+   *  @param vvec vector along the y-axis of the 2D system (not necessarily
+   *    in the plane defined by `normal`)
+   *  @return projected tensor */
+  def projectTensorTo2D(normal: (Double, Double, Double),
+                        uvec: (Double, Double, Double),
+                        vvec: (Double, Double, Double),
+                        tensor: Matrix[Double]): Matrix[Double] = 
+  {
+    implicit def tupleToColVector(x: (Double, Double, Double)) =
+      DenseVectorCol(x._1, x._2, x._3)
+    def dot3(x: DenseVector[Double], y: DenseVector[Double]) =
+      x(0) * y(0) + x(1) * y(1) + x(2) * y(2)
+
+    val e1 = normalize(uvec - dot3(uvec, normal), 2)
+    val e2 = normalize(vvec - dot3(vvec, normal), 2)
+    val e3 = cross(e1, e2)
+    
+    val xform = DenseMatrix(e1.toArray, e2.toArray, e3.toArray)
+    val t3 = xform * tensor
+    
+    DenseMatrix(
+      Array(t3(0, 0), t3(0, 1)),
+      Array(t3(1, 0), t3(1, 1))
+    )
   }
   
 }

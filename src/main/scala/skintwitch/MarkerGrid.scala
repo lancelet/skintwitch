@@ -40,11 +40,22 @@ trait MarkerGrid extends Grid[Marker] { self =>
   
   /** Computes the Biot strain tensor using the Peters1987 method. */
   def biot(s0: Int, s: Int): Grid[Matrix[Double]] = {
+    synchronized {
+      biotCache.getOrElse((s0, s), {
+        val b = biot_worker(s0, s)
+        biotCache((s0, s)) = b
+        b
+      })
+    }
+  }
+  private val biotCache =
+    scala.collection.mutable.Map.empty[(Int, Int), Grid[Matrix[Double]]]
+  private def biot_worker(s0: Int, s: Int): Grid[Matrix[Double]] = {
     val fGrid = dgtensor(s0, s)
     fGrid.map(e => {
       val (r, u) = TensorUtils.polarDecomp(e)
       u - DenseMatrix.eye[Double](3)
-    })
+    })    
   }
   
   /** Computes the rate of the Biot strain tensor using the Peters1987 method.
@@ -190,6 +201,51 @@ trait MarkerGrid extends Grid[Marker] { self =>
     } yield (s, t)
     // return the build mesh
     new TriMesh(verts, faceBuilder.result, Some(texCoords))
+  }
+  
+  /** Computes the Biot strain tensor in 2D, over the surface of the grid. 
+   *
+   *  The tensor is expressed in `(u, v)` parametric coordinates, where
+   *  `u` increases from 0 to 1 along the columns of the grid, and `v`
+   *  increases from 0 to 1 along the rows of the grid.
+   *
+   *  @param s0 un-deformed sample
+   *  @param s deformed sample
+   *  @return 2D Biot strain tensor */
+  def biot2D(s0: Int, s: Int): Grid[Matrix[Double]] = {
+    // first compute the 3D biot tensor grid
+    val b3 = biot(s0, s)
+    // now transform to 2D according using a new grid
+    new Grid[Matrix[Double]] {
+      val numRows = self.numRows
+      val numCols = self.numCols
+      def apply(row: Int, col: Int): Matrix[Double] = {
+        TensorUtils.projectTensorTo2D(normal(row, col), 
+                                      uvec(row, col),
+                                      vvec(row, col),
+                                      b3(row, col))
+      }
+      private def uvec(row: Int, col: Int): (Double, Double, Double) = {
+        val (c0, c1) = if (col < numCols - 1) (col, col + 1)
+                       else (col - 1, col)
+        val x0 = self(row, c0).co(s0)
+        val x1 = self(row, c1).co(s0)
+        (x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+      }
+      private def vvec(row: Int, col: Int): (Double, Double, Double) = {
+        val (r0, r1) = if (row < numRows - 1) (row, row + 1)
+                       else (row - 1, row)
+        val x0 = self(r0, col).co(s0)
+        val x1 = self(r1, col).co(s0)
+        (x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+      }
+      private def normal(row: Int, col: Int): (Double, Double, Double) = {
+        val adj = self.getFullAdjacent(row, col)
+        val q = adj.map(rc => self(rc._1, rc._2).co(s0))
+        val p = self(row, col).co(s0)
+        TensorUtils.calcNormal(p, q)
+      }
+    }
   }
   
 }
