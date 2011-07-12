@@ -64,9 +64,9 @@ extends AnimatedActor {
     } {
       points.InsertNextPoint(x, y, z)
       tensorArrayBuilder += (
-        m(0, 0), m(0, 1), m(0, 2),
-        m(1, 0), m(1, 1), m(1, 2),
-        m(2, 0), m(2, 1), m(2, 2))
+        m.e11, m.e12, m.e13,
+        m.e21, m.e22, m.e23,
+        m.e31, m.e32, m.e33)
     }
     tensors.SetJavaArray(tensorArrayBuilder.result)
     points.Modified

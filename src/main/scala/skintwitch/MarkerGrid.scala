@@ -2,8 +2,6 @@ package skintwitch
 
 import scala.collection.immutable._
 import mocaputils.Marker
-import scalala.tensor.Matrix
-import scalala.tensor.dense.DenseMatrix
 import math.abs
 import skintwitch.mesh.TriMesh
 
@@ -14,14 +12,14 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @param s0 un-deformed index
    *  @param s deformed index
    *  @return new grid with computed deformation gradient tensor */
-  def dgtensor(s0: Int, s: Int): Grid[Matrix[Double]] = 
-    new Grid[Matrix[Double]]{
+  def dgtensor(s0: Int, s: Int): Grid[Mat3] = 
+    new Grid[Mat3]{
       val numRows = self.numRows
       val numCols = self.numCols
       def apply(row: Int, col: Int) = {
         val adj = self.getFullAdjacent(row, col)
-        val qu = adj.map(rc => self(rc._1, rc._2).co(s0))
-        val qd = adj.map(rc => self(rc._1, rc._2).co(s))
+        val qu = adj.map(rc => self(rc._1, rc._2).co(s0)).map(Vec3(_))
+        val qd = adj.map(rc => self(rc._1, rc._2).co(s)).map(Vec3(_))
         TensorUtils.dgtensor(self(row, col).co(s0), qu,
                              self(row, col).co(s), qd)
       }
@@ -32,14 +30,14 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  
    *  @param sample sample at which to compute the tensor
    *  @return new grid of the computed tensor */
-  def dgtensorRate(sample: Int): Grid[Matrix[Double]] = {
+  def dgtensorRate(sample: Int): Grid[Mat3] = {
     val period = 1.0 / self(0, 0).fs
     val s0 = if (sample > 0) sample - 1 else 1
     dgtensor(s0, sample).map(_ / period)
   }
   
   /** Computes the Biot strain tensor using the Peters1987 method. */
-  def biot(s0: Int, s: Int): Grid[Matrix[Double]] = {
+  def biot(s0: Int, s: Int): Grid[Mat3] = {
     synchronized {
       biotCache.getOrElse((s0, s), {
         val b = biot_worker(s0, s)
@@ -49,18 +47,18 @@ trait MarkerGrid extends Grid[Marker] { self =>
     }
   }
   private val biotCache =
-    scala.collection.mutable.Map.empty[(Int, Int), Grid[Matrix[Double]]]
-  private def biot_worker(s0: Int, s: Int): Grid[Matrix[Double]] = {
+    scala.collection.mutable.Map.empty[(Int, Int), Grid[Mat3]]
+  private def biot_worker(s0: Int, s: Int): Grid[Mat3] = {
     val fGrid = dgtensor(s0, s)
     fGrid.map(e => {
-      val (r, u) = TensorUtils.polarDecomp(e)
-      u - DenseMatrix.eye[Double](3)
-    })    
+      val (r, u) = e.polar
+      u - Mat3.identity
+    })
   }
   
   /** Computes the rate of the Biot strain tensor using the Peters1987 method.
    */
-  def biotRate(sample: Int): Grid[Matrix[Double]] = {
+  def biotRate(sample: Int): Grid[Mat3] = {
     synchronized {
       biotRateCache.getOrElse(sample, {
         val pbg = biotRate_worker(sample)
@@ -70,8 +68,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
     }
   }
   private val biotRateCache = 
-    scala.collection.mutable.Map.empty[Int, Grid[Matrix[Double]]]
-  private def biotRate_worker(sample: Int): Grid[Matrix[Double]] = {
+    scala.collection.mutable.Map.empty[Int, Grid[Mat3]]
+  private def biotRate_worker(sample: Int): Grid[Mat3] = {
     val period = 1.0 / self(0, 0).fs
     val s0 = if (sample > 0) sample - 1 else 1
     biot(s0, sample).map(_ / period)
@@ -88,8 +86,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
   Grid[Double] = {
     dgtensor(s0, s).map { f =>
       // get the principal stretches from the deformation gradient tensor
-      val (r, u) = TensorUtils.polarDecomp(f)
-      val prin = TensorUtils.principalComp(u)
+      val (r, u) = f.polar
+      val prin = u.eig
       val stretches = prin.map(_._1)
       
       // one of the principal stretches will be closest to 1.0; we want to
@@ -212,36 +210,36 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @param s0 un-deformed sample
    *  @param s deformed sample
    *  @return 2D Biot strain tensor */
-  def biot2D(s0: Int, s: Int): Grid[Matrix[Double]] = {
+  def biot2D(s0: Int, s: Int): Grid[Mat2] = {
     // first compute the 3D biot tensor grid
     val b3 = biot(s0, s)
     // now transform to 2D according using a new grid
-    new Grid[Matrix[Double]] {
+    new Grid[Mat2] {
       val numRows = self.numRows
       val numCols = self.numCols
-      def apply(row: Int, col: Int): Matrix[Double] = {
+      def apply(row: Int, col: Int): Mat2 = {
         TensorUtils.projectTensorTo2D(normal(row, col), 
                                       uvec(row, col),
                                       vvec(row, col),
                                       b3(row, col))
       }
-      private def uvec(row: Int, col: Int): (Double, Double, Double) = {
+      private def uvec(row: Int, col: Int): Vec3 = {
         val (c0, c1) = if (col < numCols - 1) (col, col + 1)
                        else (col - 1, col)
         val x0 = self(row, c0).co(s0)
         val x1 = self(row, c1).co(s0)
-        (x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+        Vec3(x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
       }
-      private def vvec(row: Int, col: Int): (Double, Double, Double) = {
+      private def vvec(row: Int, col: Int): Vec3 = {
         val (r0, r1) = if (row < numRows - 1) (row, row + 1)
                        else (row - 1, row)
         val x0 = self(r0, col).co(s0)
         val x1 = self(r1, col).co(s0)
-        (x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+        Vec3(x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
       }
-      private def normal(row: Int, col: Int): (Double, Double, Double) = {
+      private def normal(row: Int, col: Int): Vec3 = {
         val adj = self.getFullAdjacent(row, col)
-        val q = adj.map(rc => self(rc._1, rc._2).co(s0))
+        val q = adj.map(rc => self(rc._1, rc._2).co(s0)).map(Vec3(_))
         val p = self(row, col).co(s0)
         TensorUtils.calcNormal(p, q)
       }

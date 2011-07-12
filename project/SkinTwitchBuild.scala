@@ -33,9 +33,11 @@ object Dependencies {
   val iText       = "com.lowagie" % "itext" % "2.1.5" intransitive()
   val migLayout   = "com.miglayout" % "miglayout" % "3.7.4" classifier "swing"
   val liftjson    = "net.liftweb" %% "lift-json" % "2.4-M2"
+  val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
+                       "0.17"
   val allDependencies = Seq(
     scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText, migLayout,
-    liftjson
+    liftjson, ejml
   )
 }
 

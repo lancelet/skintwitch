@@ -1,61 +1,14 @@
 package skintwitch
 
 import scala.collection.immutable._
-import scalala.library.Library.normalize
-import scalala.library.LinearAlgebra.{ cross, eig, inv, svd }
-import scalala.scalar.Complex
-import scalala.tensor.{ ::, Matrix }
-import scalala.tensor.dense.{ DenseMatrix, DenseVector, DenseVectorCol,
-  DenseVectorRow }
 
 object TensorUtils {
-  
-  /** Finds principal values and principal directions of a second-order tensor.
-   *  
-   *  When expressed as a matrix, the principal values of the tensor are the 
-   *  real eigenvalues, and the principal directions are the corresponding
-   *  eigenvectors.
-   *  
-   *  @param m matrix representation of the second-order tensor
-   *  @param cThreshold threshold above which imaginary components of 
-   *    eigenvalues are assumed to make them non-real
-   *    
-   *  @return sequence of principal values and corresponding principal 
-   *    directions */
-  def principalComp(m: Matrix[Double], cThreshold: Double = 1e-6): 
-  Seq[(Double, DenseVector[Double])] = {
-    // eigenvalue decomposition of m
-    val (re, im, vm) = eig(m)
-    // decompose matrix of eigenvectors to a sequence, and marshal complex vals
-    val vs = for (c <- 0 until vm.numCols) yield vm(::, c)
-    val ev = for ((r, i) <- re.data zip im.data) yield Complex(r, i)
-    // discard eigenvalues with imaginary parts >= cThreshold
-    (ev zip vs).filter(x => x._1.imag < cThreshold).
-      map(x => (x._1.real, x._2)).toList
-  }
-
-  /** Polar decomposition: `m = r * u`.
-   * 
-   *  Performs a polar decomposition of tensor `m` into an orthonormal matrix
-   *  `r` and a positive definite symmetric tensor, `u`.
-   *  
-   *  @param m tensor matrix on which to perform the polar decomposition
-   *  @return `(r, u)` */
-  def polarDecomp(m: Matrix[Double]): (Matrix[Double], Matrix[Double]) = {
-    require(m.numRows == 3 && m.numCols == 3)
-    val (w, sdiag, vp) = svd(DenseMatrix.horzcat(m))
-    val r = w * vp
-    val s = DenseMatrix.tabulate(3, 3)((r: Int, c: Int) => 
-      if (r != c) 0.0 else sdiag(r))
-    val u = vp.t * s * vp
-    (r, u)
-  }
   
   /** Compute the mean of a sequence of matrices.
    * 
    *  @param mats sequence of matrices
    *  @return the mean of the sequence of matrices */
-  def mean(mats: Seq[Matrix[Double]]): Matrix[Double] = {
+  def mean(mats: Seq[Mat3]): Mat3 = {
     mats.reduce(_ + _) / mats.length.toDouble
   }
   
@@ -84,19 +37,9 @@ object TensorUtils {
    *  @param qd: deformed F-group
    *  @return deformation gradient tensor relative to the undeformed
    *    markers (I think it's relative to the undeformed markers...) */
-  def dgtensor(pu: (Double, Double, Double),
-               qu: Seq[(Double, Double, Double)],
-               pd: (Double, Double, Double),
-               qd: Seq[(Double, Double, Double)]): Matrix[Double] =
+  def dgtensor(pu: Vec3, qu: Seq[Vec3], pd: Vec3, qd: Seq[Vec3]): Mat3 =
   {
     require(qu.length == qd.length && qu.length >= 2)
-   
-    // TODO: Figure out why this is required.  It handles the subtractions
-    //       immediately below (bu - au, etc.).  However,
-    //       scalala.operators.Implicits._ should also handle this, but it
-    //       doesn't!
-    implicit def tupleToVector(x: (Double, Double, Double)) =
-      DenseVector(x._1, x._2, x._3)
         
     // find dx and dX sets: vectors from pu to qu and pd to qd
     val dx = qd.map(_ - pd)
@@ -107,36 +50,35 @@ object TensorUtils {
     val dXbar = dX.reduce(_ + _) / dX.length.toDouble
     
     // marker distribution tensors
-    val dXbarOp = dXbar * dXbar.t
-    val dXbardxbar = dXbar * dxbar.t
-    val dxbarOp = dxbar * dxbar.t
-    val x00 = dX.map(dXi => dXi * dXi.t - dXbarOp).reduce(_ + _) / 
+    val dXbarOp = dXbar tp dXbar
+    val dXbardxbar = dXbar tp dxbar
+    val dxbarOp = dxbar tp dxbar
+    val x00 = dX.map(dXi => (dXi tp dXi) - dXbarOp).reduce(_ + _) / 
       dX.length.toDouble
     val x01 = (for ((dxi, dXi) <- dx zip dX) yield {
-      dXi * dxi.t - dXbardxbar
+      (dXi tp dxi) - dXbardxbar
     }).reduce(_ + _) / dx.length.toDouble
-    val x11 = dx.map(dxi => dxi * dxi.t - dxbarOp).reduce(_ + _) / 
+    val x11 = dx.map(dxi => (dxi tp dxi) - dxbarOp).reduce(_ + _) / 
       dx.length.toDouble
       
     // normals to each set of markers
-    val eigs00 = principalComp(x00)
+    val eigs00 = x00.eig
     val e0nN = eigs00.minBy(_._1)
-    val eigs11 = principalComp(x11)
+    val eigs11 = x11.eig
     val e1nn = eigs11.minBy(_._1)
-    val nNmat = DenseMatrix(e0nN._2.toArray).t
-    val nnmat = DenseMatrix(e1nn._2.toArray).t
+    val nN = e0nN._2
+    val nn = e1nn._2
     
     // projection tensors
-    val eye3 = DenseMatrix.eye[Double](3)
-    val pN = eye3 - nNmat * nNmat.t
-    val pn = eye3 - nnmat * nnmat.t
+    val pN = Mat3.identity - (nN tp nN)
+    val pn = Mat3.identity - (nn tp nn)
     
     // project x00 and x01
     val x00star = pN * x00 * pN
     val x01star = pn * x01 * pn
     
     // compute F
-    val x00starinv = inv(x00star + nNmat * nNmat.t) - nNmat * nNmat.t
+    val x00starinv = (x00star + (nN tp nN)).inv - (nN tp nN)
     val F = pn * x01star.t * x00starinv
     
     // NOTE: when F is computed this way, it has two correct principal
@@ -144,19 +86,15 @@ object TensorUtils {
     //       is a non-physical state.
     //       Consequently, we re-form F below as a plane-strain tensor, whose
     //       third principal stretch is 1.0
-    
+
     // decompose F into r and u
-    val (r, u) = polarDecomp(F)
+    val (r, u) = F.polar
     // eigendecompose u, and then re-form with third principal stretch set to
     //  one
-    val eigs = principalComp(u).sortBy(_._1)
-    val Q = DenseMatrix.horzcat(DenseMatrix(eigs(0)._2.toArray).t, 
-                                DenseMatrix(eigs(1)._2.toArray).t, 
-                                DenseMatrix(eigs(2)._2.toArray).t)
-    val L = DenseMatrix(Array(1.0, 0, 0), /* new (1.0) principal stretch */
-                        Array(0, eigs(1)._1, 0), /* 2nd prin stretch */
-                        Array(0, 0, eigs(2)._1)  /* 3rd prin stretch */)
-    val Umod = Q * L * inv(Q)
+    val eigs = u.eig.sortBy(_._1)
+    val Q = Mat3.horzcat(eigs(0)._2, eigs(1)._2, eigs(2)._2)
+    val L = Mat3.diag(1, eigs(1)._1, eigs(2)._1)
+    val Umod = Q * L * Q.inv
     r * Umod
   }
   
@@ -170,24 +108,16 @@ object TensorUtils {
    *  @param p central point
    *  @param q cloud of points (not including `p`)
    *  @return average normal vector */
-  def calcNormal(p: (Double, Double, Double),
-                 q: Seq[(Double, Double, Double)]): (Double, Double, Double) =
+  def calcNormal(p: Vec3, q: Seq[Vec3]): Vec3 =
   {
-    implicit def tupleToColVector(x: (Double, Double, Double)) =
-      DenseVectorCol(x._1, x._2, x._3)
-      
     val x = q.map(_ - p)
     val xbar = x.reduce(_ + _) / x.length.toDouble
-    val xbarOP = xbar * xbar.t
+    val xbarOP = xbar tp xbar
     val x00 = (for {
       xitem <- x
-    } yield ((xitem * xitem.t) - xbarOP)).reduce(_ + _) / x.length.toDouble
-    //val (re, im, vm) = eig(x00)
-    //val eigs = re.toArray zip (for (c <- 0 until vm.numCols) yield vm(::, c))
-    val eigs = principalComp(x00)
-    assert(eigs.length == 3)
-    val n = normalize(eigs.minBy(_._1)._2, 2)
-    (n(0), n(1), n(2))
+    } yield ((xitem tp xitem) - xbarOP)).reduce(_ + _) / x.length.toDouble
+    val eigs = x00.eig
+    eigs.minBy(_._1)._2.n
   }
 
   /** Projects a 3D (3x3) tensor to a 2D (2x2) tensor.
@@ -207,27 +137,18 @@ object TensorUtils {
    *  @param vvec vector along the y-axis of the 2D system (not necessarily
    *    in the plane defined by `normal`)
    *  @return projected tensor */
-  def projectTensorTo2D(normal: (Double, Double, Double),
-                        uvec: (Double, Double, Double),
-                        vvec: (Double, Double, Double),
-                        tensor: Matrix[Double]): Matrix[Double] = 
+  def projectTensorTo2D(normal: Vec3, uvec: Vec3, vvec: Vec3, tensor: Mat3):
+  Mat2 = 
   {
-    implicit def tupleToColVector(x: (Double, Double, Double)) =
-      DenseVectorCol(x._1, x._2, x._3)
-    def dot3(x: DenseVector[Double], y: DenseVector[Double]) =
-      x(0) * y(0) + x(1) * y(1) + x(2) * y(2)
+    val e1 = (uvec - normal * (uvec dot normal)).n
+    val e2 = (vvec - normal * (vvec dot normal)).n
+    val e3 = e1 cross e2
 
-    val e1 = normalize(uvec - dot3(uvec, normal), 2)
-    val e2 = normalize(vvec - dot3(vvec, normal), 2)
-    val e3 = cross(e1, e2)
-    
-    val xform = DenseMatrix(e1.toArray, e2.toArray, e3.toArray)
+    val xform = Mat3.vertcat(e1, e2, e3)
     val t3 = xform * tensor
-    
-    DenseMatrix(
-      Array(t3(0, 0), t3(0, 1)),
-      Array(t3(1, 0), t3(1, 1))
-    )
+
+    Mat2(t3.e11, t3.e12,
+         t3.e21, t3.e22)
   }
   
 }
