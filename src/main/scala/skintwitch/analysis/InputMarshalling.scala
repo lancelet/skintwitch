@@ -13,6 +13,8 @@ trait TrialInput {
   val horse: String
   val trialNumber: Int
   val site: String
+  val start: Option[Int]
+  val end: Option[Int]
 }
 
 object InputMarshalling {
@@ -20,7 +22,7 @@ object InputMarshalling {
   /** Internal case class for trial input. */
   private case class IMTrialInput(
     inputFile: File, pointerFile: File, horse: String, trialNumber: Int,
-    site: String
+    site: String, start: Option[Int] = None, end: Option[Int] = None
   ) extends TrialInput
   
   /** Find all trials that are within, or in sub-directories of, a top level
@@ -78,6 +80,16 @@ object InputMarshalling {
       // fetch trial number and location from XML
       val trialNum = (trial \ "@number").text
       val trialLoc = (trial \ "@loc").text
+      val trialStart = {
+        val startCand = (trial \ "@start").text
+        if (startCand == "") None
+        else Some(startCand.toInt)
+      }
+      val trialEnd = {
+        val endCand = (trial \ "@end").text
+        if (endCand == "") None
+        else Some(endCand.toInt)
+      }
       
       // create the trial name and a "joined" trial name
       val trialName = "%s_trials%s" format (horseIdentifier, trialNum)
@@ -97,7 +109,7 @@ object InputMarshalling {
       
       // create trial input object
       IMTrialInput(inFile, pointerFile, horseIdentifier, trialNum.toInt, 
-                   trialLoc)
+                   trialLoc, trialStart, trialEnd)
     }
   }
   

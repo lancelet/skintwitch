@@ -141,11 +141,12 @@ object TensorUtils {
   Mat2 = 
   {
     val e1 = (uvec - normal * (uvec dot normal)).n
-    val e2 = (vvec - normal * (vvec dot normal)).n
-    val e3 = e1 cross e2
+    val e2cand = (vvec - normal * (vvec dot normal)).n
+    val e3 = e1 cross e2cand
+    val e2 = e3 cross e1
 
     val xform = Mat3.vertcat(e1, e2, e3)
-    val t3 = xform * tensor
+    val t3 = xform * tensor * (xform.t)
 
     Mat2(t3.e11, t3.e12,
          t3.e21, t3.e22)

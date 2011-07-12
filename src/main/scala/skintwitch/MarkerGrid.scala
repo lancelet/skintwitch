@@ -189,13 +189,13 @@ trait MarkerGrid extends Grid[Marker] { self =>
       faceBuilder += triA
       faceBuilder += triB
     }
-    // compute texture coordinates: u goes along the columns of the grid,
-    //  while v goes along the rows
+    // compute texture coordinates: s goes along the columns of the grid,
+    //  while t goes along the rows
     val texCoords = for {
       row <- 0 until numRows
       col <- 0 until numCols
-      s = row / (numRows - 1).toDouble
-      t = col / (numCols - 1).toDouble
+      s = col / (numCols - 1).toDouble
+      t = row / (numRows - 1).toDouble
     } yield (s, t)
     // return the build mesh
     new TriMesh(verts, faceBuilder.result, Some(texCoords))
@@ -214,7 +214,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
     // first compute the 3D biot tensor grid
     val b3 = biot(s0, s)
     // now transform to 2D according using a new grid
-    new Grid[Mat2] {
+    val grid = new Grid[Mat2] {
       val numRows = self.numRows
       val numCols = self.numCols
       def apply(row: Int, col: Int): Mat2 = {
@@ -226,16 +226,16 @@ trait MarkerGrid extends Grid[Marker] { self =>
       private def uvec(row: Int, col: Int): Vec3 = {
         val (c0, c1) = if (col < numCols - 1) (col, col + 1)
                        else (col - 1, col)
-        val x0 = self(row, c0).co(s0)
-        val x1 = self(row, c1).co(s0)
-        Vec3(x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+        val x0 = Vec3(self(row, c0).co(s0))
+        val x1 = Vec3(self(row, c1).co(s0))
+        x1 - x0
       }
       private def vvec(row: Int, col: Int): Vec3 = {
         val (r0, r1) = if (row < numRows - 1) (row, row + 1)
                        else (row - 1, row)
-        val x0 = self(r0, col).co(s0)
-        val x1 = self(r1, col).co(s0)
-        Vec3(x1._1 - x0._1, x1._2 - x0._2, x1._3 - x0._3)
+        val x0 = Vec3(self(r0, col).co(s0))
+        val x1 = Vec3(self(r1, col).co(s0))
+        x1 - x0
       }
       private def normal(row: Int, col: Int): Vec3 = {
         val adj = self.getFullAdjacent(row, col)
@@ -244,6 +244,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
         TensorUtils.calcNormal(p, q)
       }
     }
+    // convert to a VGrid to save referencing the marker grid
+    VGrid(grid)
   }
   
 }
@@ -283,8 +285,15 @@ object MarkerGrid {
     val lookupGrid = new MarkerGrid {
       val numRows = maxRow - minRow + 1
       val numCols = maxCol - minCol + 1
-      def apply(row: Int, col: Int) = crMarkers.
-        find(m => m.row == row + minRow && m.col == col + minCol).get.marker
+      def apply(row: Int, col: Int) = {
+        val optMarker = crMarkers.find(m => {
+          m.row == row + minRow &&
+          m.col == col + minCol
+        })
+        require(optMarker.isDefined, 
+                "Marker C%dR%d was not found!" format (row, col))
+        optMarker.get.marker
+      }
     }
     
     // convert to a wrapped VGrid (for faster access: should be faster lookup)
