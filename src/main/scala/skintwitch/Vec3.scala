@@ -21,7 +21,8 @@ case class Vec3(x: Double, y: Double, z: Double) {
 }
 
 object Vec3 {
-  implicit def tupleToVec3(t: (Double, Double, Double)): Vec3 = apply(t)
+  implicit def tupleToVec3(t: (Double, Double, Double)): Vec3 =
+    Vec3(t._1, t._2, t._3)
   def apply(t: (Double, Double, Double)): Vec3 = Vec3(t._1, t._2, t._3)
   def approxEq(a: Vec3, b: Vec3, eps: Double = 1.0e-8): Boolean = {
     def approxEq(a: Double, b: Double, eps: Double) =

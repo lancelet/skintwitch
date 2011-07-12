@@ -2,6 +2,7 @@ package skintwitch
 
 import scala.collection.immutable._
 import org.ejml.simple.SimpleMatrix
+import org.ejml.alg.dense.decomposition.DecompositionFactory
 
 case class Mat3(
   e11: Double, e12: Double, e13: Double,
@@ -84,6 +85,19 @@ case class Mat3(
                     (evd.getEigenvalue(2), 2)).filter(_._1.isReal)
     evals.map(ev =>
       (ev._1.real, Vec3.fromSimpleMatrix(evd.getEigenVector(ev._2))))
+  }
+  
+  /** Eigenvalues when symmetric (faster). */
+  lazy val eigSymm: Seq[(Double, Vec3)] = {
+    val evd = DecompositionFactory.eigSymm(3, true)
+    val retVal = evd.decompose(simpleMatrix.getMatrix)
+    assert(retVal == true)
+    val evals = Seq((evd.getEigenvalue(0), 0), 
+                    (evd.getEigenvalue(1), 1), 
+                    (evd.getEigenvalue(2), 2)).filter(_._1.isReal)
+    evals.map(ev =>
+      (ev._1.real, Vec3.fromSimpleMatrix(
+          SimpleMatrix.wrap(evd.getEigenVector(ev._2)))))   
   }
   
   private lazy val simpleMatrix: SimpleMatrix = new SimpleMatrix(Array(

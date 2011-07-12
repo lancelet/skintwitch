@@ -62,9 +62,9 @@ object TensorUtils {
       dx.length.toDouble
       
     // normals to each set of markers
-    val eigs00 = x00.eig
+    val eigs00 = x00.eigSymm
     val e0nN = eigs00.minBy(_._1)
-    val eigs11 = x11.eig
+    val eigs11 = x11.eigSymm
     val e1nn = eigs11.minBy(_._1)
     val nN = e0nN._2
     val nn = e1nn._2
@@ -91,7 +91,7 @@ object TensorUtils {
     val (r, u) = F.polar
     // eigendecompose u, and then re-form with third principal stretch set to
     //  one
-    val eigs = u.eig.sortBy(_._1)
+    val eigs = u.eigSymm.sortBy(_._1)
     val Q = Mat3.horzcat(eigs(0)._2, eigs(1)._2, eigs(2)._2)
     val L = Mat3.diag(1, eigs(1)._1, eigs(2)._1)
     val Umod = Q * L * Q.inv
@@ -116,7 +116,7 @@ object TensorUtils {
     val x00 = (for {
       xitem <- x
     } yield ((xitem tp xitem) - xbarOP)).reduce(_ + _) / x.length.toDouble
-    val eigs = x00.eig
+    val eigs = x00.eigSymm
     eigs.minBy(_._1)._2.n
   }
 

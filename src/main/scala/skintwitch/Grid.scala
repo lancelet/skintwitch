@@ -109,12 +109,21 @@ trait Grid[T] { self =>
    *  @param col column of the central vertex
    *  @return sequence of `(Int, Int)` containing adjacent vertices */
   def getFullAdjacent(row: Int, col: Int): Seq[(Int, Int)] = {
+    adjacentCache.getOrElse((row, col), {
+      val s = getFullAdjacent_worker(row, col)
+      adjacentCache((row, col)) = s
+      s
+    })
+  }
+  private val adjacentCache =
+    scala.collection.mutable.Map[(Int, Int), Seq[(Int, Int)]]()
+  private def getFullAdjacent_worker(row: Int, col: Int): Seq[(Int, Int)] = {
     val template = Seq(
       (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1))
     val ofsTemplate = template.map(rc => (rc._1 + row, rc._2 + col))
     val validTris = ofsTemplate.filter(rc =>
       rc._1 >= 0 && rc._1 < numRows && rc._2 >= 0 && rc._2 < numCols)
-    validTris
+    validTris    
   }
   
   /** Returns the grid in a row-major sequence. */
