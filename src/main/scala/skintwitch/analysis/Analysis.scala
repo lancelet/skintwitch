@@ -54,9 +54,10 @@ class Analysis {
     } else {
       None
     }
+    val renderContours = (trial.in.site != "Control")
     Render2DTensors.renderToPDF(plotFileName, Seq(trial.biot2d), 
                                 Seq(trial.pokeLocation),
-                                strokePath)
+                                strokePath, renderContours)
   }
   println("Done")
   
@@ -79,7 +80,9 @@ class Analysis {
     } else {
       None
     }
-    Render2DTensors.renderToPDF(plotFileName, grids, pokes, strokePaths)
+    val renderContours = (site != "Control")
+    Render2DTensors.renderToPDF(plotFileName, grids, pokes, strokePaths,
+                                renderContours)
   }
   println("Done")
  
@@ -102,8 +105,10 @@ class Analysis {
     } else {
       None
     }
+    val renderContours = (site != "Control")
     Render2DTensors.renderToPDF(plotFileName, grids.toIndexedSeq, 
-                                pokes.toIndexedSeq, strokePaths)
+                                pokes.toIndexedSeq, strokePaths,
+                                renderContours)
   }
   println("Done")
   

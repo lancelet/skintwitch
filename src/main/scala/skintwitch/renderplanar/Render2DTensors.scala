@@ -14,6 +14,7 @@ import java.awt.geom.Ellipse2D
 import skintwitch.analysis.Averaging
 import java.awt.BasicStroke
 import java.awt.geom.Path2D
+import skintwitch.Contouring
 
 class Render2DTensors  // blah!  apparently Eclipse needs this
 
@@ -27,13 +28,14 @@ class Render2DTensors  // blah!  apparently Eclipse needs this
 case class Render2DTensorsChart(grids: Seq[Grid[Mat2]],
                                 stPokes: Seq[Option[(Double, Double)]],
                                 stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                                renderContours: Boolean,
                                 scale: Double = 100) 
 {
   def draw(g: Graphics2D, r2d: Rectangle2D) {
     val xform = g.getTransform
     g.translate(r2d.getX, r2d.getY)
     Render2DTensors.render(g, r2d.getWidth, r2d.getHeight, grids, stPokes,
-                           stStrokes, scale)
+                           stStrokes, renderContours, scale)
     g.setTransform(xform)
   }
 }
@@ -52,10 +54,12 @@ object Render2DTensors {
   def renderToPDF(fileName: String, grids: Seq[Grid[Mat2]],
                   stPokes: Seq[Option[(Double, Double)]],
                   stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                  renderContours: Boolean,
                   xSpacing: Int = 10, ySpacing: Int = 10,
                   scale: Double = 100)
   {
-    val chart = Render2DTensorsChart(grids, stPokes, stStrokes, scale)
+    val chart = Render2DTensorsChart(grids, stPokes, stStrokes, renderContours,
+                                     scale)
     val width = xSpacing * (grids.head.numCols + 1)
     val height = ySpacing * (grids.head.numRows + 1)
     PlotToPDF.save(new File(fileName), chart, width, height)
@@ -72,6 +76,7 @@ object Render2DTensors {
   def renderToBufferedImage(grids: Seq[Grid[Mat2]], 
                             stPokes: Seq[Option[(Double, Double)]],
                             stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                            renderContours: Boolean,
                             xSpacing: Int = 50, ySpacing: Int = 50,
                             scale: Double = 100): BufferedImage =
   {
@@ -79,7 +84,7 @@ object Render2DTensors {
     val height = ySpacing * (grids.head.numRows + 1)
     val bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB)
     val g = bi.createGraphics()
-    render(g, width, height, grids, stPokes, stStrokes, scale)
+    render(g, width, height, grids, stPokes, stStrokes, renderContours, scale)
     g.dispose()
     bi
   }
@@ -96,6 +101,7 @@ object Render2DTensors {
   def render(g: Graphics2D, width: Double, height: Double, 
              grids: Seq[Grid[Mat2]], stPokes: Seq[Option[(Double, Double)]],
              stStrokes: Option[Seq[Seq[(Double, Double)]]],
+             renderContours: Boolean,
              scale: Double = 100) 
   {
     val mean = if (grids.length > 1) {
@@ -139,6 +145,46 @@ object Render2DTensors {
         // stroke path
         g.setColor(new Color(0.2f, 0.2f, 0.2f, 0.4f))
         g.setStroke(new BasicStroke(2.0f))
+        g.draw(path)
+      }
+    }
+    
+    // plot contours for the grid of tensor invariants
+    if (renderContours) {
+      def i1(m: Mat2): Double = m.eig.map(_._1).map(x => x * x).sum
+      val i1Mean: Grid[Double] = mean.map(i1(_))
+      val i1Max = i1Mean.rowMajor.max
+      val i1Min = i1Mean.rowMajor.min
+      val i1MeanNorm: Grid[Double] = i1Mean.map(
+        (x: Double) => (x - i1Min) / (i1Max - i1Min))
+      val i1Interp = Contouring.bicubicInterp(i1MeanNorm, 
+                                              i1MeanNorm.numRows * 20,
+                                              i1MeanNorm.numCols * 20)
+      def stToPx(s: Double, t: Double): (Double, Double) = {
+        val x = s * xSpacing * (mean.numCols - 1) + xSpacing
+        val y = t * ySpacing * (mean.numRows - 1) + ySpacing
+        (x, y)
+      }
+      val nContours = 20
+      val contours = (for {
+        i <- 0 until nContours
+        x = (i+1).toDouble / (nContours + 2).toDouble
+      } yield Contouring.traceContours(i1Interp, x)).flatten
+      for (contour <- contours) {
+        val pts = contour.points
+        val path = new Path2D.Double
+        val (x0, y0) = stToPx(pts.head.x, pts.head.y)
+        path.moveTo(x0, y0)
+        for (pt <- pts.tail) {
+          val (x, y) = stToPx(pt.x, pt.y)
+          path.lineTo(x, y)
+        }
+        if (contour.isClosed) {
+          val (x, y) = stToPx(pts.head.x, pts.head.y)
+          path.lineTo(x, y)
+        }
+        g.setColor(new Color(0.0f, 0.0f, 0.0f, 0.5f))
+        g.setStroke(new BasicStroke(0.5f))
         g.draw(path)
       }
     }

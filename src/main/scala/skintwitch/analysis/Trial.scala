@@ -82,8 +82,9 @@ case class Trial(
     } yield (distance, inGrid)
   }
   
-  // the reference sample (just before the poke occurs).  for control trials
-  //  and girthline trials, the reference sample is sample 0
+  // the reference sample (just before the poke occurs).  for Control trials,
+  //  the reference sample is 0, while for Girthline trials, the reference
+  //  sample is specified by `start`.
   val refSample: Int = refSampleOverride.getOrElse {
     if (in.site == "Control") {
       // take sample 0 as the reference in a control trial
@@ -150,7 +151,7 @@ case class Trial(
   
   // compute the grid average of the first invariant of the left Cauchy-Green 
   //  Deformation tensor at each time sample.  this is computed over all
-  //  samples, but only the samples after the poke are valid.
+  //  samples, but only the samples after the poke are relevant.
   val i1: IndexedSeq[Double] = for {
     i <- 0 until nSamples
   } yield markerGrid.avgLCauchyGreenI1(refSample, i)
