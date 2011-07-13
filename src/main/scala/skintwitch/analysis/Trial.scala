@@ -158,7 +158,7 @@ case class Trial(
   // perform some extra filtering on i1, for the purpose of finding its
   //  initial peak value
   val i1Filt: IndexedSeq[Double] = {
-    val sos = Butter.butterSOSEven(2, i1cutoffFreq / (fs / 2)).first
+    val sos = Butter.butterSOSEven(2, i1cutoffFreq / (fs / 2)).head
     val b = IndexedSeq(sos.b0, sos.b1, sos.b2)
     val a = IndexedSeq(   1.0, sos.a1, sos.a2)
     FiltFilt.filtfilt(b, a, i1)

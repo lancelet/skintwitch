@@ -56,6 +56,7 @@ object SkinTwitchBuild extends Build {
 				  fork in run := true,
 				  javaOptions in run ++= runOptions
 				)) dependsOn(scalaSignal, mocaputils, scalari)
+	// can add scalacOptions := Seq("-unchecked", "-deprecation")
   val scalaSignalUri = uri("git://github.com/lancelet/scalasignal.git")
   lazy val scalaSignal = RootProject(scalaSignalUri)
   val mocaputilsUri = uri("git://github.com/lancelet/mocaputils.git")

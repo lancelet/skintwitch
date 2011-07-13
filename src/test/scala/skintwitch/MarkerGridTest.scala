@@ -32,7 +32,7 @@ class MarkerGridTest extends FunSuite with ShouldMatchers {
   
   test("fromCRMarkers - complain about missing markers") {
     val markers = markerSeq(5, 4).dropRight(1)
-    intercept [NoSuchElementException] {
+    intercept [IllegalArgumentException] {
       MarkerGrid.fromCRMarkers(markers)
     }
   }

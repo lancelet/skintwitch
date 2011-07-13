@@ -40,7 +40,7 @@ class TensorUtilsTest extends FunSuite with ShouldMatchers {
     val e2 = (e3 cross e1).n
     // transform the tensor using its orthonormal basis system into the world
     val xform = Mat3.vertcat(e1, e2, e3).inv
-    val txf = xform * tensor
+    val txf = xform * tensor * xform.t
     // now project the tensor back to its orthonormal system
     val normal = e3
     val uvec = e1
