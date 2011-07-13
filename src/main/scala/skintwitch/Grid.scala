@@ -92,7 +92,7 @@ trait Grid[T] { self =>
    *  bicubic rendering as Catmull-Rom patches). */
   def expandEdgesByOne()(implicit TtoL: () => Linearizable[T]): Grid[T] =
     expandRows.expandCols
-  
+    
   private def expandRows()(implicit TtoL: () => Linearizable[T]): Grid[T] =
   new Grid[T] {
     private val l = TtoL()
@@ -121,6 +121,46 @@ trait Grid[T] { self =>
         l.lin(self(row, self.numCols - 2), self(row, self.numCols - 1), 2)
       } else {
         self(row, col - 1)
+      }
+    }
+  }
+  
+  /** Performs simple subdivision of the grid, using bilinear interpolation
+   *  to construct a new row and new column between each existing pair of
+   *  rows and columns. */
+  def subdivide()(implicit TtoL: () => Linearizable[T]): Grid[T] = 
+    VGrid(interpRows.interpCols)
+  
+  /** Expands rows of the grid, by interpolating a new row between every pair
+   *  of existing rows. */
+  private def interpRows()(implicit TtoL: () => Linearizable[T]): Grid[T] =
+  new Grid[T] {
+    private val l = TtoL()
+    val numRows = 2 * (self.numRows - 1) + 1
+    val numCols = self.numCols
+    def apply(row: Int, col: Int): T = {
+      if (row % 2 == 0) {
+        self(row / 2, col)
+      } else {
+        val r = (row - 1) / 2
+        l.lin(self(r, col), self(r + 1, col), 0.5)
+      }
+    }
+  }
+  
+  /** Expands columns of the grid, by interpolating a new column between
+   *  every pair of existing columns. */
+  private def interpCols()(implicit TtoL: () => Linearizable[T]): Grid[T] =
+  new Grid[T] {
+    private val l = TtoL()
+    val numRows = self.numRows
+    val numCols = 2 * (self.numCols - 1) + 1
+    def apply(row: Int, col: Int): T = {
+      if (col % 2 == 0) {
+        self(row, col / 2)
+      } else {
+        val c = (col - 1) / 2
+        l.lin(self(row, c), self(row, c + 1), 0.5)
       }
     }
   }

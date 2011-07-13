@@ -9,10 +9,10 @@ trait Linearizable[T] {
 }
 
 object Linearizable {
-  class DoubleIsLinearizable(d: Double) extends Linearizable[Double] {
+  class DoubleIsLinearizable extends Linearizable[Double] {
     def lin(x0: Double, x1: Double, s: Double): Double =
       x0 * (1.0 - s) + x1 * s
   }
-  
-  implicit def doubleToLinearizable(d: Double) = new DoubleIsLinearizable(d)
+  implicit def doubleToLinearizable(): DoubleIsLinearizable = 
+    new DoubleIsLinearizable
 }
