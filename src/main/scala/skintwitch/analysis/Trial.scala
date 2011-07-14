@@ -11,6 +11,7 @@ import skintwitch.Grid
 import skintwitch.Mat2
 import signal.Butter
 import signal.FiltFilt
+import skintwitch.Vec3
 
 /** A trial; encompassing much of the processing required for an individual
  *  trial.
@@ -27,9 +28,9 @@ case class Trial(
   in: TrialInput,
   refSampleOverride: Option[Int] = None,
   cutoffFreq: Double = 5.0,
-  i1cutoffFreq: Double = 1.0,
-  threshold: Double = 10.0,
-  backoffTime: Double = 0.25
+  /*i1cutoffFreq: Double = 5.0,*/
+  threshold: Double = 12.0,
+  backoffTime: Double = 0.0
 ) {
 
   import Trial._
@@ -131,6 +132,18 @@ case class Trial(
     }
   }
   
+  // find the poke location in spatial (3D) coordinates.  there is no poke
+  //  location for control trials and girthline trials
+  val pokeSpatialLocation: Option[Vec3] = {
+    if (in.site == "Control" || in.site == "Girthline") {
+      None
+    } else {
+      val mesh = markerGrid.diceToTrimesh(refSample)
+      val (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(refSample))
+      Some(xPoint)
+    }    
+  }
+  
   // find the stroke path for a Girthline trial.  the path is a set of st
   //  parametric coordinates describing the path of the tip marker during the
   //  period it is in contact with the skin
@@ -158,12 +171,14 @@ case class Trial(
   
   // perform some extra filtering on i1, for the purpose of finding its
   //  initial peak value
+  /*
   val i1Filt: IndexedSeq[Double] = {
     val sos = Butter.butterSOSEven(2, i1cutoffFreq / (fs / 2)).head
     val b = IndexedSeq(sos.b0, sos.b1, sos.b2)
     val a = IndexedSeq(   1.0, sos.a1, sos.a2)
     FiltFilt.filtfilt(b, a, i1)
-  }
+  }*/
+  val i1Filt: IndexedSeq[Double] = i1  // disable extra filtering for now
   
   // compute the maximum response sample.  this is the first peak in the
   //  i1 values following the poke
@@ -188,6 +203,44 @@ case class Trial(
     }
   }
   assert(maxResponseSample > refSample && maxResponseSample < nSamples)
+  
+  // find the peak I1 value at the maximum response sample
+  val peakI1AtMaximumResponse: Double = {
+    val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+    i1Grid.rowMajor.max
+  }
+  
+  // find the spatial location of the marker with the peak i1 value
+  val peakI1SpatialLocation: Vec3 = {
+    // first form a grid of i1 values at the maximum response, and find
+    //  the maximum marker
+    val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+    val (rowMax, colMax) = Averaging.maxCoords(i1Grid)
+    // now go back to the marker grid, and returns the coordinates of that
+    //  marker at the maximum response
+    markerGrid(rowMax, colMax).co(maxResponseSample)
+  }
+
+  // find the i1 value at the poke location at the maximum response
+  val i1AtPokeLocation: Option[Double] = {
+    if (pokeLocation.isDefined) {
+      val (s, t) = pokeLocation.get
+      val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+      Some(i1Grid.interpUV(s, t))
+    } else {
+      None
+    }
+  }
+  
+  // the distance from the poke location to the location of the maximum I1
+  //  response
+  val distanceFromPokeToMaxI1: Option[Double] = {
+    if (pokeSpatialLocation.isDefined) {
+      Some((peakI1SpatialLocation - pokeSpatialLocation.get).length)
+    } else {
+      None
+    }
+  }
   
   // compute the Biot strain tensor in 2D, at the maximum response sample,
   //  relative to the reference sample

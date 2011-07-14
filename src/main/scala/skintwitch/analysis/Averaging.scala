@@ -36,4 +36,22 @@ object Averaging {
     def apply(row: Int, col: Int): Mat2 = mean(grids.map(_(row, col)))
   }
   
+  /** Returns the coordinates of the maximum value of a grid of Doubles. */
+  def maxCoords(grid: Grid[Double]): (Int, Int) = {
+    var rowMax = 0
+    var colMax = 0
+    var curMax = grid(rowMax, colMax)
+    for {
+      row <- 0 until grid.numRows
+      col <- 0 until grid.numCols
+    } {
+      if (grid(row, col) > curMax) {
+        curMax = grid(row, col)
+        rowMax = row
+        colMax = col
+      }
+    }
+    (rowMax, colMax)
+  }
+  
 }

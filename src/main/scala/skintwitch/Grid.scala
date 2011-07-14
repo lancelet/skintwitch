@@ -165,4 +165,25 @@ trait Grid[T] { self =>
     }
   }
   
+  /** Bilinearly interpolates the grid.
+   * 
+   *  @param u parametric coordinate along the columns of the grid (0.0 -> 1.0)
+   *  @param v parametric coordinate along the rows of the grid (0.0 -> 1.0)
+   *  @return bilinearly-interpolated value */
+  def interpUV(u: Double, v: Double)(implicit TtoL: () => Linearizable[T]): T =
+  {
+    require(u >= 0 && u <= 1)
+    require(v >= 0 && v <= 1)
+    val l = TtoL()
+    val uf = u - math.floor(u)
+    val vf = v - math.floor(v)
+    val c0 = math.floor(u * (numCols - 1)).toInt
+    val r0 = math.floor(v * (numRows - 1)).toInt
+    val c1 = c0 + 1
+    val r1 = r0 + 1
+    val ci0 = l.lin(self(r0, c0), self(r0, c1), uf)
+    val ci1 = l.lin(self(r1, c0), self(r1, c1), uf)
+    l.lin(ci0, ci1, vf)
+  }
+  
 }
