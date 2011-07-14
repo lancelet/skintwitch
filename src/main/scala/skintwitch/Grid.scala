@@ -175,10 +175,18 @@ trait Grid[T] { self =>
     require(u >= 0 && u <= 1)
     require(v >= 0 && v <= 1)
     val l = TtoL()
-    val uf = u - math.floor(u)
-    val vf = v - math.floor(v)
-    val c0 = math.floor(u * (numCols - 1)).toInt
-    val r0 = math.floor(v * (numRows - 1)).toInt
+    val uu = u * (numCols - 1)
+    val vv = v * (numRows - 1)
+    val c0 = {
+      val c0Cand = math.floor(uu).toInt
+      if (c0Cand == numCols - 1) (c0Cand - 1) else c0Cand
+    }
+    val r0 = {
+      val r0Cand = math.floor(vv).toInt
+      if (r0Cand == numRows - 1) (r0Cand - 1) else r0Cand
+    }
+    val uf = uu - c0 * (numCols - 1)
+    val vf = vv - r0 * (numRows - 1)
     val c1 = c0 + 1
     val r1 = r0 + 1
     val ci0 = l.lin(self(r0, c0), self(r0, c1), uf)
