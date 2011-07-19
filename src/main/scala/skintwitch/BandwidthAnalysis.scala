@@ -31,6 +31,7 @@ import java.io.Writer
 import mocaputils.GappedMarker
 import org.jfree.ui.Layer
 import org.jfree.chart.plot.IntervalMarker
+import skintwitch.analysis.InputMarshalling
 
 /** Bandwidth Analysis of Trials
  * 
@@ -64,11 +65,8 @@ class BandwidthAnalysis extends Logged {
   
   // data directory and data files
   val dataDir = "./data"
-  val dataFileNames: Seq[String] = (new File(dataDir)).listFiles(
-    new FilenameFilter {
-      def accept(dir: File, name: String) = name.toLowerCase.endsWith(".trc")
-    }
-  ).map(_.getCanonicalFile.getPath).toList
+  val dataFileNames: Seq[String] = InputMarshalling.
+    getTrials(new File(dataDir)).map(_.inputFile.getCanonicalPath)
   
   // output directory and file
   val outDir = "./output"
@@ -90,7 +88,8 @@ class BandwidthAnalysis extends Logged {
             "$F_s=%.1f\\,\\mathrm{Hz}$.\n".format(s.cameraRate))
         
         // force-fill any gaps in the markers
-        val filledMarkers = s.markers.map(GapFiller.fillGapsLerp(_).get)
+        val filledMarkers = s.markers.filter(_.exists).
+          map(GapFiller.fillGapsLerp(_).get)
         // find bandwidth of all markers (sorted largest to smallest)
         val bandwidths = filledMarkers.map(m => (m, m.bandwidth(0.9))).
             sortWith((x, y) => y._2 < x._2)
