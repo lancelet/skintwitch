@@ -75,7 +75,11 @@ class Analysis {
       "Site," +
       "Distance from poke to peak I1 at maximum response (mm)," +
       "Peak I1 value at maximum response (stretch squared)," +
-      "I1 value at the poke location at maximum response (stretch squared)\n")
+      "I1 value at the poke location at maximum response (stretch squared)," +
+      "Poke X," +
+      "Poke Y," +
+      "Peak I1 X," +
+      "Peak I1 Y\n")
     val byHorse = trials.groupBy(_.in.horse).toSeq.sortBy(_._1).map(_._2)
     for (horseTrials <- byHorse) {
       val bySite = horseTrials.groupBy(_.in.site).toSeq.sortBy(_._1).map(_._2)
@@ -96,8 +100,17 @@ class Analysis {
           } else {
             ""
           }
-          o.write("%s,%d,%s,%s,%f,%s\n" 
-                  format (horse, num, site, distPokeI1, peakI1, pokeI1))
+          val (pokeX, pokeY) = if (trial.pokeGridLocation.isDefined) {
+            ("%f" format trial.pokeGridLocation.get._1,
+             "%f" format trial.pokeGridLocation.get._2)
+          } else { 
+            ("", "") 
+          }
+          val peakI1X = trial.peakI1GridLocation._1
+          val peakI1Y = trial.peakI1GridLocation._2
+          o.write("%s,%d,%s,%s,%f,%s,%s,%s,%f,%f\n" 
+                  format (horse, num, site, distPokeI1, peakI1, pokeI1,
+                          pokeX, pokeY, peakI1X, peakI1Y))
         }
       }
     }

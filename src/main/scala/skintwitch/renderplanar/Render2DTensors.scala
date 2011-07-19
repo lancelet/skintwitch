@@ -15,6 +15,7 @@ import skintwitch.analysis.Averaging
 import java.awt.BasicStroke
 import java.awt.geom.Path2D
 import skintwitch.Contouring
+import skintwitch.Contour
 
 class Render2DTensors  // blah!  apparently Eclipse needs this
 
@@ -157,19 +158,31 @@ object Render2DTensors {
       val i1Min = i1Mean.rowMajor.min
       val i1MeanNorm: Grid[Double] = i1Mean.map(
         (x: Double) => (x - i1Min) / (i1Max - i1Min))
-      val i1Interp = Contouring.bicubicInterp(i1MeanNorm, 
-                                              i1MeanNorm.numRows * 20,
-                                              i1MeanNorm.numCols * 20)
       def stToPx(s: Double, t: Double): (Double, Double) = {
         val x = s * xSpacing * (mean.numCols - 1) + xSpacing
         val y = t * ySpacing * (mean.numRows - 1) + ySpacing
         (x, y)
       }
-      val nContours = 20
-      val contours = (for {
-        i <- 0 until nContours
-        x = (i+1).toDouble / (nContours + 2).toDouble
-      } yield Contouring.traceContours(i1Interp, x)).flatten
+      val contours = {
+        var dl = 10
+        var contours: Seq[Contour] = null
+        while (contours == null) {
+          try {
+            val i1Interp = Contouring.bicubicInterp(i1MeanNorm, 
+                                                    i1MeanNorm.numRows * dl,
+                                                    i1MeanNorm.numCols * dl)
+            val nContours = 20
+            contours = (for {
+              i <- 0 until nContours
+              x = (i+1).toDouble / (nContours + 2).toDouble
+            } yield Contouring.traceContours(i1Interp, x)).flatten
+          } catch {
+            case ex: AssertionError => dl += 2
+          }
+          assert(dl <= 50, "Contour division level 50 reached!")
+        }
+        contours
+      }
       for (contour <- contours) {
         val pts = contour.points
         val path = new Path2D.Double

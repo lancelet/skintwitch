@@ -132,6 +132,17 @@ case class Trial(
     }
   }
   
+  // find the poke location (row, col) in grid coordinates.  there is no poke 
+  //  location for control trials and girthline trials.
+  val pokeGridLocation: Option[(Double, Double)] = {
+    if (pokeLocation.isDefined) {
+      val (s, t) = pokeLocation.get
+      Some(t * (markerGrid.numRows - 1), s * (markerGrid.numCols - 1))
+    } else {
+      None
+    }
+  }
+  
   // find the poke location in spatial (3D) coordinates.  there is no poke
   //  location for control trials and girthline trials
   val pokeSpatialLocation: Option[Vec3] = {
@@ -210,15 +221,21 @@ case class Trial(
     i1Grid.rowMajor.max
   }
   
-  // find the spatial location of the marker with the peak i1 value
-  val peakI1SpatialLocation: Vec3 = {
+  // find the marker (row, col) with the peak i1 value
+  val peakI1GridLocation: (Double, Double) = {
     // first form a grid of i1 values at the maximum response, and find
     //  the maximum marker
     val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
     val (rowMax, colMax) = Averaging.maxCoords(i1Grid)
+    (rowMax, colMax)
+  }
+  
+  // find the spatial location of the marker with the peak i1 value
+  val peakI1SpatialLocation: Vec3 = {
+    val (rowMax, colMax) = peakI1GridLocation
     // now go back to the marker grid, and returns the coordinates of that
     //  marker at the maximum response
-    markerGrid(rowMax, colMax).co(maxResponseSample)
+    markerGrid(rowMax.toInt, colMax.toInt).co(maxResponseSample)
   }
 
   // find the i1 value at the poke location at the maximum response
