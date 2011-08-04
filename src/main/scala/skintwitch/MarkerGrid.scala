@@ -12,7 +12,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @param s0 un-deformed index
    *  @param s deformed index
    *  @return new grid with computed deformation gradient tensor */
-  def dgtensor(s0: Int, s: Int): Grid[Mat3] = 
+  def dgtensor(s0: Int, s: Int): Grid[Mat3] = {
+    //println("Computing dgtensor: s0 = %d, s1 = %d" format (s0, s)) // TEMP
     new Grid[Mat3]{
       val numRows = self.numRows
       val numCols = self.numCols
@@ -24,6 +25,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
                              self(row, col).co(s), qd)
       }
     }
+  }
   
   /** Computes the gradient (rate) of the deformation gradient tensor over
    *  the grid using the Peters1987 method.

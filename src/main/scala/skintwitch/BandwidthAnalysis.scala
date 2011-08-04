@@ -93,25 +93,32 @@ class BandwidthAnalysis extends Logged {
         // find bandwidth of all markers (sorted largest to smallest)
         val bandwidths = filledMarkers.map(m => (m, m.bandwidth(0.9))).
             sortWith((x, y) => y._2 < x._2)
+        log(" -> Force-filled gaps")
 
         // export bandwidth information
         saveBandwidthTable(writer, bandwidths, trialName)
+        log(" -> Saved bandwidth table")
             
         // export gap information
         saveGapTable(writer, s.markers, trialName)
+        log(" -> Saved gap table")
                 
         // 90%ile marker
         val bm90 = bandwidths((bandwidths.length * (1.0 - 0.9)).toInt)
+        log(" -> Found 90%ile marker")
         
         // plot marker psd
         plotPSD(bm90._1, bm90._2, trialName)
+        log(" -> Plotted PSD for 90%ile marker")
                     
         // plot deviation of marker from mean position, along with filtered
         //  version
         plotFilteredComparison(bm90._1, bm90._2, trialName)
+        log(" -> Plotted filtered comparison")
         
         // export image links
         saveImageLinks(writer, trialName, bm90._2 * 8, bm90._1)
+        log(" -> Saved image links")
         
         // identify discontinuities and save plots for them
         val discontThreshold = 5.0
@@ -124,15 +131,18 @@ class BandwidthAnalysis extends Logged {
             plotDiscont(m, mg, trialName, writer, discontThreshold)
           }
         }
+        log(" -> Plotted discontinuities")
         
         // save table of discontinuities
         if (!discontMap.isEmpty) {
           saveDiscontTable(filledMarkers, writer, trialName,
             discontThreshold)
         }
+        log(" -> Saved table of discontinuities")
         
         // save strain energy density vs time plot
         plotI1vsTime(filledMarkers, sedWriter, trialName)
+        log(" -> Saved strain energy density vs time plot")
       }
     )
   }
@@ -146,13 +156,15 @@ class BandwidthAnalysis extends Logged {
     val nSamples = filledMarkers(0).co.length
     val filtMarkers = filledMarkers.map(_.butter2(5.0))
     val grid = MarkerGrid.fromCRMarkers(filtMarkers)
+    log(" -> Constructed the grid.")
     // compute I1 in parallel, then re-order by index
     val i1 = (1 until nSamples).par.map((index: Int) =>
       (index, grid.avgLCauchyGreenI1(0, index))).seq.
       sortBy(_._1).map(_._2)
+    log(" -> Computed I1 (in parallel)")
     // dataset
     val dataSet = new XYDataset with StaticDataset {
-      val series = Vector(TimeSampledSeries("W", i1.toIndexedSeq))
+      val series = Vector(TimeSampledSeries("I1", i1.toIndexedSeq))
     }
     // plot
     val chart = ChartFactory.createXYLineChart(
@@ -261,7 +273,13 @@ class BandwidthAnalysis extends Logged {
     val y = m.ys.map(_ - m.ys.sum / m.ys.length)
     val z = m.zs.map(_ - m.zs.sum / m.zs.length)
     // filter using a 2nd Order Butterworth with 8 x bandwidth
-    val butSos = Butter.butterSOSEven(2, 8 * fc / (m.fs / 2))(0)
+    val fcutoff = {
+      val fcCand = 8 * fc / (m.fs / 2)
+      if (fcCand > 1.0) 1.0
+      else if (fcCand < 0.0) 0.0
+      else fcCand
+    }
+    val butSos = Butter.butterSOSEven(2, fcutoff)(0)
     val b = List[Double](butSos.b0, butSos.b1, butSos.b2)
     val a = List[Double](1, butSos.a1, butSos.a2)
     val xf = FiltFilt.filtfilt(b, a, x)

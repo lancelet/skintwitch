@@ -44,10 +44,12 @@ object TensorUtils {
     // find dx and dX sets: vectors from pu to qu and pd to qd
     val dx = qd.map(_ - pd)
     val dX = qu.map(_ - pu)
+    //println("computed dx and dX")
     
     // find averages
     val dxbar = dx.reduce(_ + _) / dx.length.toDouble
     val dXbar = dX.reduce(_ + _) / dX.length.toDouble
+    //println("computed dxbar and dXbar")
     
     // marker distribution tensors
     val dXbarOp = dXbar tp dXbar
@@ -60,6 +62,7 @@ object TensorUtils {
     }).reduce(_ + _) / dx.length.toDouble
     val x11 = dx.map(dxi => (dxi tp dxi) - dxbarOp).reduce(_ + _) / 
       dx.length.toDouble
+    //println("found marker distribution tensors")
       
     // normals to each set of markers
     val eigs00 = x00.eigSymm
@@ -68,18 +71,22 @@ object TensorUtils {
     val e1nn = eigs11.minBy(_._1)
     val nN = e0nN._2
     val nn = e1nn._2
+    //println("found normals to each set of markers")
     
     // projection tensors
     val pN = Mat3.identity - (nN tp nN)
     val pn = Mat3.identity - (nn tp nn)
+    //println("computed projection tensors")
     
     // project x00 and x01
     val x00star = pN * x00 * pN
     val x01star = pn * x01 * pn
+    //println("projected x00 and x01")
     
     // compute F
     val x00starinv = (x00star + (nN tp nN)).inv - (nN tp nN)
     val F = pn * x01star.t * x00starinv
+    //println("computed F")
     
     // NOTE: when F is computed this way, it has two correct principal
     //       stretches, but the third principal stretch is set to zero, which
@@ -89,12 +96,14 @@ object TensorUtils {
 
     // decompose F into r and u
     val (r, u) = F.polar
+    //println("decomposed F")
     // eigendecompose u, and then re-form with third principal stretch set to
     //  one
     val eigs = u.eigSymm.sortBy(_._1)
     val Q = Mat3.horzcat(eigs(0)._2, eigs(1)._2, eigs(2)._2)
     val L = Mat3.diag(1, eigs(1)._1, eigs(2)._1)
     val Umod = Q * L * Q.inv
+    //println("re-formed third principal stretch")
     r * Umod
   }
   
