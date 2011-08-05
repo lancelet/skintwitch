@@ -18,7 +18,7 @@ Completed:
 Working on:
 
   - Final summary of results.
-  
+
 == Installation ==
 
 Check out the project from GitHub (this command uses the Read-Only
@@ -33,7 +33,19 @@ https://github.com/harrah/xsbt[sbt/xsbt] to compile the project:
   $ sbt
 
 https://github.com/harrah/xsbt[sbt/xsbt] will launch, and collect
-everything it needs for the project.  Within `sbt`, you can then run:
+everything it needs for the project.  Next, you must fetch the native library 
+dependencies for VTK.  This is done for either Mac OS X or Linux using one of 
+the commands:
+
+  > vtkNativeOSX
+  > vtkNativeLinux
+
+These commands download compressed files containing the platform-specific
+native dependencies, and then run processes to extract them into the `./lib`
+directory.  This process for fetching the native dependencies may not be ideal
+and will be revised if better options become available.
+
+Within `sbt`, you can then run:
 
   > test
 
