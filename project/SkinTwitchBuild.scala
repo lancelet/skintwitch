@@ -1,6 +1,8 @@
 import sbt._
 import Keys._
+import Process._
 import scala.collection.immutable._
+import java.io.File
 
 object BuildSettings {
   val buildOrganization = "com.github.skintwitch"
@@ -21,7 +23,9 @@ object Resolvers {
     "http://ondex.rothamsted.bbsrc.ac.uk/nexus/content/groups/public"
   val migLayout = "MigLayout" at
     "http://www.miglayout.com/mavensite/"
-  val allResolvers = Seq(scalaToolsSnapshots, ondex, migLayout)
+  val artenum = "Artenum" at 
+    "http://maven.artenum.com/content/repositories/thirdparty/"
+  val allResolvers = Seq(scalaToolsSnapshots, ondex, migLayout, artenum)
 }
 
 object Dependencies {
@@ -34,10 +38,11 @@ object Dependencies {
   val migLayout   = "com.miglayout" % "miglayout" % "3.7.4" classifier "swing"
   val liftjson    = "net.liftweb" % "lift-json_2.9.0-1" % "2.4-M3"
   val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
-                       "0.17"
+                        "0.17"
+  val vtk         = "vtk" % "vtk" % "5.6.1"
   val allDependencies = Seq(
     scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText, migLayout,
-    liftjson, ejml
+    liftjson, ejml, vtk
   )
 }
 
@@ -46,15 +51,29 @@ object SkinTwitchBuild extends Build {
   import Dependencies._
   import BuildSettings._
 
+  def vtkNative = Command.command("vtkNative") { state =>
+    val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
+      "vtk/vtk-native/5.6.1/"
+    val vtkNativeURL = vtkRepo + "vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6.tgz"
+    val destFile = new File("./lib/vtk-native.tgz")
+    IO.download(new URL(vtkNativeURL), destFile)
+    def untar() {
+      "tar -xzf ./lib/vtk-native.tgz" !
+    }
+    untar
+    state
+  }
+
   val vtkNativePath = "-Djava.library.path=./lib/vtk-native-5.6.1-osx-x86_64"
-  val extraHeap = "-Xmx4096M"
+  val extraHeap = "-Xmx2048M"
   val runOptions = Seq(vtkNativePath, extraHeap)
   lazy val skintwitch = Project("skintwitch", file("."), 
 				settings = buildSettings ++ Seq(
 				  libraryDependencies := allDependencies,
 				  resolvers := allResolvers,
 				  fork in run := true,
-				  javaOptions in run ++= runOptions
+				  javaOptions in run ++= runOptions,
+                                  commands ++= Seq(vtkNative)
 				)) dependsOn(scalaSignal, mocaputils, scalari)
 	// can add scalacOptions := Seq("-unchecked", "-deprecation")
   val scalaSignalUri = uri("git://github.com/lancelet/scalasignal.git")
