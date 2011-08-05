@@ -43,7 +43,9 @@ the commands:
 These commands download compressed files containing the platform-specific
 native dependencies, and then run processes to extract them into the `./lib`
 directory.  This process for fetching the native dependencies may not be ideal
-and will be revised if better options become available.
+and will be revised if better options become available.  To run under Linux,
+it may also be necessary to set the `LD_LIBRARY_PATH` environment variable
+to the appropriate `./lib` subdirectory outside of sbt.
 
 Within `sbt`, you can then run:
 

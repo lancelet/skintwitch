@@ -80,12 +80,12 @@ object SkinTwitchBuild extends Build {
     state
   }
 
-  val vtkNativePath = if (System.getProperty("os.name") == "OS X") {
+  val vtkNativePath = if (System.getProperty("os.name") == "Mac OS X") {
     "-Djava.library.path=./lib/"
   } else {
     "-Djava.library.path=./lib/vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6/"
   }
-  println("vtkNativePath = %s" format vtkNativePath)
+  //println("vtkNativePath = %s" format vtkNativePath)
   val extraHeap = "-Xmx2048M"
   val runOptions = Seq(vtkNativePath, extraHeap)
   lazy val skintwitch = Project("skintwitch", file("."), 
