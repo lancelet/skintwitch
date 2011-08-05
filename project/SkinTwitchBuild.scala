@@ -51,20 +51,36 @@ object SkinTwitchBuild extends Build {
   import Dependencies._
   import BuildSettings._
 
-  def vtkNative = Command.command("vtkNative") { state =>
+  // Fetches native VTK files for Linux (x86_32, glibc2_7)
+  def vtkNativeLinux = Command.command("vtkNativeLinux") { state =>
     val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
       "vtk/vtk-native/5.6.1/"
-    val vtkNativeURL = vtkRepo + "vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6.tgz"
+    val vtkNativeURL = vtkRepo + 
+      "vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6.tgz"
     val destFile = new File("./lib/vtk-native.tgz")
     IO.download(new URL(vtkNativeURL), destFile)
     def untar() {
-      "tar -xzf ./lib/vtk-native.tgz" !
+      "tar -xzf ./lib/vtk-native.tgz -C ./lib" !
     }
     untar
     state
   }
+  
+  // Fetches native VTK files for OS X (x86_64)
+  def vtkNativeOSX = Command.command("vtkNativeOSX") { state =>
+    val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
+      "vtk/vtk-native/5.6.1/"
+    val vtkNativeURL = vtkRepo + "vtk-native-5.6.1-osx-x86_64.zip"
+    val destFile = new File("./lib/vtk-native.zip")
+    IO.download(new URL(vtkNativeURL), destFile)
+    def unzip() {
+      "unzip -j ./lib/vtk-native.zip -d ./lib" !
+    }
+    unzip
+    state
+  }
 
-  val vtkNativePath = "-Djava.library.path=./lib/vtk-native-5.6.1-osx-x86_64"
+  val vtkNativePath = "-Djava.library.path=./lib/"
   val extraHeap = "-Xmx2048M"
   val runOptions = Seq(vtkNativePath, extraHeap)
   lazy val skintwitch = Project("skintwitch", file("."), 
@@ -73,7 +89,7 @@ object SkinTwitchBuild extends Build {
 				  resolvers := allResolvers,
 				  fork in run := true,
 				  javaOptions in run ++= runOptions,
-                                  commands ++= Seq(vtkNative)
+          commands ++= Seq(vtkNativeLinux, vtkNativeOSX)
 				)) dependsOn(scalaSignal, mocaputils, scalari)
 	// can add scalacOptions := Seq("-unchecked", "-deprecation")
   val scalaSignalUri = uri("git://github.com/lancelet/scalasignal.git")

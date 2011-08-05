@@ -27,3 +27,6 @@ render
 *.rib
 *.json
 maps
+*.jnilib
+*.zip
+lib/.*
