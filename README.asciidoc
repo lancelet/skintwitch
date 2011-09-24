@@ -14,9 +14,6 @@ Completed:
   - Transformation of the stimulation device (poker), to find the position
      of its end point.
   - Computation of distance from poke point to marker grid mesh.
-  
-Working on:
-
   - Final summary of results.
 
 == Installation ==

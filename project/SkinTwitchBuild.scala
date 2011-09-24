@@ -6,7 +6,7 @@ import java.io.File
 
 object BuildSettings {
   val buildOrganization = "com.github.skintwitch"
-  val buildScalaVersion = "2.9.1.RC1"
+  val buildScalaVersion = "2.9.1"
   val buildVersion      = "0.1-SNAPSHOT"
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization    := buildOrganization,
@@ -29,14 +29,14 @@ object Resolvers {
 }
 
 object Dependencies {
-  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.1.RC1"
-  val scalaTest   = "org.scalatest" % "scalatest_2.9.0" % "1.6.1" % "test"
+  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.1"
+  val scalaTest   = "org.scalatest" % "scalatest_2.9.1" % "1.6.1" % "test"
   val jCommon     = "jfree" % "jcommon" % "1.0.16"
   val jFreechart  = "jfree" % "jfreechart" % "1.0.13"
   val xmlGraphics = "org.apache.xmlgraphics" % "xmlgraphics-commons" % "1.3.1"
   val iText       = "com.lowagie" % "itext" % "2.1.5" intransitive()
   val migLayout   = "com.miglayout" % "miglayout" % "3.7.4" classifier "swing"
-  val liftjson    = "net.liftweb" % "lift-json_2.9.0-1" % "2.4-M3"
+  val liftjson    = "net.liftweb" % "lift-json_2.9.1" % "2.4-M4"
   val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
                         "0.17"
   val vtk         = "vtk" % "vtk" % "5.6.1"

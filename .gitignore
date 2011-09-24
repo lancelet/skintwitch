@@ -30,3 +30,4 @@ maps
 *.jnilib
 *.zip
 lib/.*
+*.bak

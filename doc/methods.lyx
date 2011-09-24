@@ -1,0 +1,1963 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman default
+\font_sans cmbr
+\font_typewriter cmtl
+\font_default_family sfdefault
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\spacing other 1.5
+\use_hyperref true
+\pdf_title "Cutaneous Trunci Project - Computational Methods"
+\pdf_author "Jonathan Merritt"
+\pdf_bookmarks true
+\pdf_bookmarksnumbered false
+\pdf_bookmarksopen false
+\pdf_bookmarksopenlevel 1
+\pdf_breaklinks false
+\pdf_pdfborder true
+\pdf_colorlinks false
+\pdf_backref false
+\pdf_pdfusetitle true
+\papersize default
+\use_geometry true
+\use_amsmath 1
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine natbib_authoryear
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\leftmargin 3cm
+\topmargin 3.5cm
+\rightmargin 3cm
+\bottommargin 3.5cm
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation skip
+\defskip medskip
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Cutaneous Trunci Project -- Computational Methods
+\end_layout
+
+\begin_layout Author
+Jonathan Merritt (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+merritt@unimelb.edu.au
+\end_layout
+
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Date
+19 July 2011
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Summary
+\end_layout
+
+\begin_layout Standard
+This document provides a description of the computational methods used on
+ the 
+\emph on
+cutaneous trunci
+\emph default
+ muscle twitch experiment, conducted at the McPhail Equine Performance Centre,
+ Michigan State University, during June and July 2011.
+ Other experimental methods (such as marker placement on the horse, skin
+ twich initiation, etc.) will be described elsewhere.
+\end_layout
+
+\begin_layout Section
+Analysis phases
+\begin_inset CommandInset label
+LatexCommand label
+name "sec:analysis-phases"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The analysis of project data consisted of four main phases:
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:freq-analysis"
+
+\end_inset
+
+Frequency analysis of raw marker data for each trial.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:vtk-viz"
+
+\end_inset
+
+Visualization of individual trial data in real-time.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:batch-analysis"
+
+\end_inset
+
+Batch analysis of all results.
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset CommandInset label
+LatexCommand label
+name "enu:aqsis-viz"
+
+\end_inset
+
+High quality visualization of individual trials (non real-time).
+\end_layout
+
+\begin_layout Subsection
+Frequency analysis of raw marker data
+\end_layout
+
+\begin_layout Standard
+The frequency analysis (
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.BandwidthAnalysis"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/BandwidthAnalysis.scala"
+
+\end_inset
+
+) was principally concerned with determining the frequency at which the
+ raw input data should be filtered.
+\end_layout
+
+\begin_layout Standard
+This analysis involved reading marker data for each trial and performing
+ a power spectral density (PSD) analysis to compute the power contained
+ at each frequency of the raw marker signals 
+\begin_inset CommandInset citation
+LatexCommand citep
+key "D'Amico1990"
+
+\end_inset
+
+.
+ This was performed for all markers in the trial, regardless of whether
+ they were part of the main marker grid.
+ A 90% bandwidth frequency, 
+\begin_inset Formula $f_{b}$
+\end_inset
+
+, was computed for each marker (see 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "D'Amico1990"
+
+\end_inset
+
+ for a description of bandwidth frequency computation).
+ 
+\begin_inset Formula $f_{b}$
+\end_inset
+
+ was defined as the frequency below which 90% of the power in the marker
+ signal along the 
+\begin_inset Formula $x$
+\end_inset
+
+, 
+\begin_inset Formula $y$
+\end_inset
+
+ and 
+\begin_inset Formula $z$
+\end_inset
+
+ directions was contained.
+ The 
+\begin_inset Formula $f_{b}$
+\end_inset
+
+ value of all markers in the trial was computed, and the 90th percentile
+ marker was selected (the marker below which 90% of the individual markers
+ had lower 
+\begin_inset Formula $f_{b}$
+\end_inset
+
+ values).
+ This 90th percentile marker was used as representative of the trial.
+ Its power spectral density was plotted, to give a visual representation
+ of its power spectrum.
+ An example of a typical PSD plot is shown in Figure
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:psd-example"
+
+\end_inset
+
+.
+\begin_inset Float figure
+wide false
+sideways false
+status collapsed
+
+\begin_layout Plain Layout
+\align center
+\begin_inset Graphics
+	filename figures/Horse4_trials7_psd.pdf
+	width 80col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:psd-example"
+
+\end_inset
+
+Example power spectral density plot (Horse 4, trial 7).
+ The different colors of the bars represent the separate PSDs of the 
+\begin_inset Formula $(x,y,z)$
+\end_inset
+
+ coordinates.
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Additionally, this part of the analysis plotted any gaps in the raw marker
+ data, and any large jumps (referred to as 
+\begin_inset Quotes eld
+\end_inset
+
+discontinuities
+\begin_inset Quotes erd
+\end_inset
+
+ in the code).
+ The marker grid was also analysed (see below) and the first invariant of
+ the Left Cauchy-Green Deformation Tensor (
+\begin_inset Formula $I_{1}$
+\end_inset
+
+) was computed over all samples in the trial, using the first sample as
+ an undeformed reference configuration.
+ The computation of 
+\begin_inset Formula $I_{1}$
+\end_inset
+
+ was performed as an initial test for later analyses (see below).
+\end_layout
+
+\begin_layout Standard
+Based upon inspection of the frequency analysis results, a cut-off frequency
+ of 5
+\begin_inset space \thinspace{}
+\end_inset
+
+Hz was selected for use in all later processing.
+\end_layout
+
+\begin_layout Subsection
+Visualization of the individual trial data in real-time
+\end_layout
+
+\begin_layout Subsubsection
+Pre-processing of marker data
+\end_layout
+
+\begin_layout Standard
+Data were read from 
+\family typewriter
+*.trc
+\family default
+ files using a specially-written library called 
+\family typewriter
+mocaputils
+\family default
+ (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lancelet/mocaputils
+\end_layout
+
+\end_inset
+
+), which was developed in parallel with this project.
+ The reading code is contained in 
+\begin_inset CommandInset href
+LatexCommand href
+name "mocaputils.TRCReader"
+target "https://github.com/lancelet/mocaputils/blob/master/src/main/scala/mocaputils/TRCReader.scala"
+
+\end_inset
+
+.
+ This library allowed TRC files to be read with all their meta-data intact.
+ The meta-data included such items as:
+\end_layout
+
+\begin_layout Itemize
+Marker names
+\end_layout
+
+\begin_layout Itemize
+Marker sampling frequency
+\end_layout
+
+\begin_layout Itemize
+Ranges of data
+\end_layout
+
+\begin_layout Standard
+Two TRC files were read for each trial:
+\end_layout
+
+\begin_layout Enumerate
+The skin twitch trial.
+\end_layout
+
+\begin_layout Enumerate
+A static trial consisting of the poking device used to initiate the skin
+ twitch response.
+\end_layout
+
+\begin_layout Standard
+Once markers were read, any gaps in the data were filled using linear interpolat
+ion (
+\begin_inset CommandInset href
+LatexCommand href
+name "mocaputils.GapFiller"
+target "https://github.com/lancelet/mocaputils/blob/master/src/main/scala/mocaputils/GapFiller.scala"
+
+\end_inset
+
+), and the markers were filtered using a low-pass forward-reverse second
+ order Butterworth filter with a cutoff frequency of 5
+\begin_inset space \thinspace{}
+\end_inset
+
+Hz (
+\begin_inset CommandInset href
+LatexCommand href
+name "mocaputils.Marker.butter2()"
+target "https://github.com/lancelet/mocaputils/blob/master/src/main/scala/mocaputils/Marker.scala"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+A grid of markers was constructed from the trial by knowing that the names
+ of markers in the grid would always be of the form 
+\family typewriter
+C(
+\backslash
+d+)R(
+\backslash
+d+)
+\family default
+, which is a regular expression in which 
+\family typewriter
+(
+\backslash
+d+)
+\family default
+ represents a sequence of one or more decimal digits.
+ The dimensions of the grid were found automatically and any missing grid
+ markers would cause an error (
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.MarkerGrid.fromCRMarkers()"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/MarkerGrid.scala"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+The static trial was used to re-construct the position of the end of the
+ poking device.
+ This was done using a 
+\begin_inset Quotes eld
+\end_inset
+
+virtual marker
+\begin_inset Quotes erd
+\end_inset
+
+, which tracked the positions of the other marker coordinates during a trial
+ (
+\begin_inset CommandInset href
+LatexCommand href
+name "mocaputils.VirtualMarker"
+target "https://github.com/lancelet/mocaputils/blob/master/src/main/scala/mocaputils/VirtualMarker.scala"
+
+\end_inset
+
+).
+ The virtual marker used the 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Veldpaus1988"
+
+\end_inset
+
+ method for computing the transformation from the static trial coordinate
+ system to the coordinate system of the skin twitch trial at each sampling
+ time (
+\begin_inset CommandInset href
+LatexCommand href
+name "mocaputils.transforms.Veldpaus"
+target "https://github.com/lancelet/mocaputils/blob/master/src/main/scala/mocaputils/transforms/Veldpaus.scala"
+
+\end_inset
+
+).
+ Figure
+\begin_inset space ~
+\end_inset
+
+X shows the stages involved with the virtual marker computation.
+\end_layout
+
+\begin_layout Subsubsection
+Grid coordinate systems
+\end_layout
+
+\begin_layout Standard
+Three coordinate systems exist in the code for referencing positions within
+ the grid (Figure
+\begin_inset space ~
+\end_inset
+
+X):
+\end_layout
+
+\begin_layout Itemize
+3D coordinates: 
+\begin_inset Formula $\mathbf{p}=(x,y,z)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Row, column coordinates: 
+\begin_inset Formula $(r,c)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Parametric coordinates: 
+\begin_inset Formula $(s,t)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The 3D coordinates are a lab-based Cartesian system, and only coincidentally
+ intersect the grid.
+\end_layout
+
+\begin_layout Standard
+The row and column coordinates refer to locations relative to the markers
+ themselves.
+ Let 
+\begin_inset Formula $N$
+\end_inset
+
+ be the number of columns and 
+\begin_inset Formula $M$
+\end_inset
+
+ be the number of rows in the grid.
+ Then, 
+\begin_inset Formula $c\in[0,N]$
+\end_inset
+
+ and 
+\begin_inset Formula $r\in[0,M]$
+\end_inset
+
+, with both 
+\begin_inset Formula $c$
+\end_inset
+
+ and 
+\begin_inset Formula $r$
+\end_inset
+
+ varying continuously across these partitions.
+ 
+\begin_inset Formula $c\in\mathbb{N}$
+\end_inset
+
+ and 
+\begin_inset Formula $r\in\mathbb{N}$
+\end_inset
+
+ are coordinates coincident with the markers themselves.
+\end_layout
+
+\begin_layout Standard
+The parametric coordinates, 
+\begin_inset Formula $s\in[0,1]$
+\end_inset
+
+ and 
+\begin_inset Formula $t\in[0,1]$
+\end_inset
+
+ vary continuously across the columns (
+\begin_inset Formula $s$
+\end_inset
+
+) and rows (
+\begin_inset Formula $t$
+\end_inset
+
+) of the grid.
+ Row and column coordinates may be transformed directly to parametric coordinate
+s as follows:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}s & =\frac{c}{N-1}\\
+t & =\frac{r}{M-1}
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+The use of 
+\begin_inset Formula $(s,t)$
+\end_inset
+
+ coordinates was often preferable to row and column coordinates, since they
+ were indepedent of the numbers of rows and columns in the grid.
+ For example, when determining whether a point lay within the grid (as opposed
+ to on its edges), 
+\begin_inset Formula $(s,t)$
+\end_inset
+
+ coordinates provided a direct means of testing relative location.
+\end_layout
+
+\begin_layout Subsubsection
+Distance from the tip of the poker to the grid
+\end_layout
+
+\begin_layout Standard
+The distance of the virtual marker representing the tip of the poker to
+ the grid was found as the shortest distance from the grid surface to the
+ tip marker coordinates (
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.mesh.TriMesh"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/mesh/TriMesh.scala"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Standard
+The grid was tesselated into a triangular polygon mesh (Figure
+\begin_inset space ~
+\end_inset
+
+X).
+ Each triangle of the mesh was then considered separately, and the shortest
+ distance from the marker coordinate to the triangle was found (
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.mesh.Tri"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/mesh/Tri.scala"
+
+\end_inset
+
+).
+ Then, the shortest distance over all triangles in the mesh was found.
+ The distances were computed in a 
+\begin_inset Quotes eld
+\end_inset
+
+signed
+\begin_inset Quotes erd
+\end_inset
+
+ fashion, so that distances on the 
+\begin_inset Quotes eld
+\end_inset
+
+outside
+\begin_inset Quotes erd
+\end_inset
+
+ of the mesh were positive, while those on the 
+\begin_inset Quotes eld
+\end_inset
+
+inside
+\begin_inset Quotes erd
+\end_inset
+
+ of the mesh were negative.
+\end_layout
+
+\begin_layout Standard
+Within each triangle, the shortest distance to the tip of the poker was
+ computed by projecting the tip point to the plane of the triangle and then
+ computing its barycentric coordinates 
+\begin_inset Formula $(b_{0},b_{1},b_{2})$
+\end_inset
+
+.
+ Two possibilities then existed for the shortest distance (Figure
+\begin_inset space ~
+\end_inset
+
+X):
+\end_layout
+
+\begin_layout Enumerate
+\begin_inset Formula $0\leq b_{i}\leq1$
+\end_inset
+
+ where 
+\begin_inset Formula $i\in\{0,1,2\}$
+\end_inset
+
+, in which case the closest point lay within the triangle at the specified
+ barycentric coordinates, and
+\end_layout
+
+\begin_layout Enumerate
+all other cases, in which the closest point lay on either an edge or vertex
+ of the triangle, and could be found as the closest distance between the
+ point and its nearest edge.
+\end_layout
+
+\begin_layout Standard
+These separate cases are handled correctly by the code.
+\end_layout
+
+\begin_layout Standard
+The signed distance was computed by finding the dot product between the
+ vector from the grid surface to the poke point and an outward-facing normal
+ of the grid (Figure
+\begin_inset space ~
+\end_inset
+
+X).
+ A positive value indicated a point 
+\begin_inset Quotes eld
+\end_inset
+
+outside
+\begin_inset Quotes erd
+\end_inset
+
+ the grid, while a negative value indicated a point 
+\begin_inset Quotes eld
+\end_inset
+
+inside
+\begin_inset Quotes erd
+\end_inset
+
+ the grid.
+\end_layout
+
+\begin_layout Standard
+The 
+\begin_inset Formula $(s,t)$
+\end_inset
+
+ coordinates of the poke location were also computed.
+ These were used to describe the poke location in terms of the grid rows
+ and columns, and also to determine whether the marker was within the grid.
+\end_layout
+
+\begin_layout Subsubsection
+Identification of poke event / reference sample
+\end_layout
+
+\begin_layout Standard
+The time sample representing the poke event (also referred to as the 
+\begin_inset Quotes eld
+\end_inset
+
+reference sample
+\begin_inset Quotes erd
+\end_inset
+
+, since it doesn't necessarily correspond to a physical poke) was found
+ as follows for normal trials:
+\end_layout
+
+\begin_layout Enumerate
+The distance from the tip of the poke device to the grid was found for all
+ time samples, and only those samples for which the tip of the poke device
+ was within the grid were considered.
+\end_layout
+
+\begin_layout Enumerate
+The minimum distance was found, and a threshold value was computed by adding
+ 10
+\begin_inset space \thinspace{}
+\end_inset
+
+mm to the minimum distance.
+\end_layout
+
+\begin_layout Enumerate
+The poke even was defined as the first sample at which the distance value
+ became less than the threshold.
+\end_layout
+
+\begin_layout Standard
+For control trials, the reference sample was sample 0, while for girth-line
+ trials, the time in contact with the grid was explicitly specified, and
+ the reference sample was the start of the contact time.
+\end_layout
+
+\begin_layout Subsubsection
+Computation of deformation gradient tensor (
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+)
+\begin_inset CommandInset label
+LatexCommand label
+name "sub:F"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The deformation gradient tensor was found using the method described by
+ 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Peters1987"
+
+\end_inset
+
+, which was further described by 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Kim2009"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset citation
+LatexCommand citet
+key "Geers1996"
+
+\end_inset
+
+.
+ It is implemented in the code by 
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.TensorUtils.dgtensor()"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/TensorUtils.scala"
+
+\end_inset
+
+.
+ For each grid point, a set of markers was selected from which the deformation
+ gradient tensor, 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+, was computed.
+ This set of markers, referred to as the 
+\begin_inset Quotes eld
+\end_inset
+
+F-group
+\begin_inset Quotes erd
+\end_inset
+
+, was different for corner vertices, edge vertices and central vertices
+ of the grid, as shown in Figure
+\begin_inset space ~
+\end_inset
+
+X.
+\end_layout
+
+\begin_layout Standard
+Let 
+\begin_inset Formula $\mathbf{p}_{d}$
+\end_inset
+
+ be the marker coordinate in the deformed state, and 
+\begin_inset Formula $\mathrm{\mathbf{p}}_{u}$
+\end_inset
+
+ be the marker coordinate in the un-deformed state.
+ Similarly, let 
+\begin_inset Formula $\{\mathbf{q}_{di}\}$
+\end_inset
+
+ be the F-group for the deformed state, and 
+\begin_inset Formula $\{\mathbf{q}_{ui}\}$
+\end_inset
+
+ be the F-group for the un-deformed state.
+ To compute 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+, we first compute vectors 
+\begin_inset Formula $\mathbf{x}_{i}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{X}_{i}$
+\end_inset
+
+, from the central marker to the F-group markers:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\mathbf{x}_{i} & =\mathbf{q}_{di}-\mathbf{p}_{d}\\
+\mathbf{X}_{i} & =\mathbf{q}_{ui}-\mathbf{p}_{u}
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+Then, we can compute the average of these two sets of vectors, 
+\begin_inset Formula $\bar{\mathbf{x}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\bar{\mathbf{X}}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\bar{\mathbf{x}} & =\frac{1}{Q}\sum_{i=1}^{Q}\mathbf{x}_{i}\\
+\bar{\mathbf{X}} & =\frac{1}{Q}\sum_{i=1}^{Q}\mathbf{X}_{i}
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+Next, we compute the marker distribution tensors 
+\begin_inset Formula $\mathbf{x}_{00}$
+\end_inset
+
+, 
+\begin_inset Formula $\mathbf{x}_{01}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{x}_{11}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\mathbf{x}_{00} & =\frac{1}{Q}\sum_{i=1}^{Q}\left(\mathbf{X}_{i}\otimes\mathbf{X}_{i}-\bar{\mathbf{X}}\otimes\bar{\mathbf{X}}\right)\\
+\mathbf{x}_{01} & =\frac{1}{Q}\sum_{i=1}^{Q}\left(\mathbf{X}_{i}\otimes\mathbf{x}_{i}-\bar{\mathbf{X}}\otimes\bar{\mathbf{x}}\right)\\
+\mathbf{x}_{11} & =\frac{1}{Q}\sum_{i=1}^{Q}\left(\mathbf{x}_{i}\otimes\mathbf{x}_{i}-\bar{\mathbf{x}}\otimes\bar{\mathbf{x}}\right)
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+where the subscripts refer to un-deformed (0) and deformed (1) states.
+ We find the normal vector in the un-deformed state, 
+\begin_inset Formula $\hat{\mathbf{N}}$
+\end_inset
+
+, as the eigenvector associated with the minimum eigenvalue of 
+\begin_inset Formula $\mathbf{x}_{00}$
+\end_inset
+
+, and the normal vector of the deformed state, 
+\begin_inset Formula $\hat{\mathbf{n}}$
+\end_inset
+
+, as the eigenvector associated with the minimum eigenvalue of 
+\begin_inset Formula $\mathbf{x}_{11}$
+\end_inset
+
+.
+ Using 
+\begin_inset Formula $ $
+\end_inset
+
+
+\begin_inset Formula $\hat{\mathbf{N}}$
+\end_inset
+
+ and 
+\begin_inset Formula $\hat{\mathbf{n}}$
+\end_inset
+
+, we then compute projection tensors 
+\begin_inset Formula $\mathbf{p}_{N}$
+\end_inset
+
+ and 
+\begin_inset Formula $\mathbf{p}_{n}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\mathbf{p}_{N} & =\mathbf{I}-\left(\hat{\mathbf{N}}\otimes\hat{\mathbf{N}}\right)\\
+\mathbf{p}_{n} & =\mathbf{I}-\left(\hat{\mathbf{n}}\otimes\hat{\mathbf{n}}\right)
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+Using these projection tensors, we can transform the marker distribution
+ tensors into the average plane of the F-group vectors:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}\mathbf{x}_{00}^{*} & =\mathbf{p}_{N}\mathbf{x}_{00}\mathbf{p}_{N}\\
+\mathbf{x}_{01}^{*} & =\mathbf{p}_{n}\mathbf{x}_{01}\mathbf{p}_{n}
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+Finally, we compute the pseudo-inverse of 
+\begin_inset Formula $\mathbf{x}_{00}^{*}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\mathbf{x}_{00}^{*-1}=\left(\mathbf{x}_{00}^{*}+\hat{\mathbf{N}}\otimes\hat{\mathbf{N}}\right)^{-1}-\left(\hat{\mathbf{N}}\otimes\hat{\mathbf{N}}\right)
+\end{equation}
+
+\end_inset
+
+From these previous stages, 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+ is given by:
+\begin_inset Formula 
+\begin{equation}
+\mathbf{F}=\left(\mathbf{I}-\hat{\mathbf{n}}\otimes\hat{\mathbf{n}}\right)\mathbf{x}_{01}^{*T}\mathbf{x}_{00}^{*-1}
+\end{equation}
+
+\end_inset
+
+The value of 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+ computed in this fashion only contains two principal stretches, and the
+ third is set to zero.
+ This is a non-physical state, but occurs because we are only able to extract
+ two principal stretches from the 2D marker coordinates.
+ In order to restore a physical state, the zero principal stretch was extracted
+ by eigen-decomposition and then set to 1.
+\end_layout
+
+\begin_layout Subsubsection
+Computation of first invariant of the Left Cauchy-Green Deformation Tensor
+ (
+\begin_inset Formula $I_{1}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+The first invariant of the Left Cauchy-Green Deformation Tensor, 
+\begin_inset Formula $I_{1}$
+\end_inset
+
+, computed at each marker coordinate, is equivalent to the sum of the squares
+ of the principal stretches of the deformation.
+ In order to compute this value, polar decomposition was used to express
+ 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+ as a rotation matrix, 
+\begin_inset Formula $\mathbf{R}$
+\end_inset
+
+, multiplied by a right stretch tensor, 
+\begin_inset Formula $\mathbf{U}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{equation}
+\mathbf{F}=\mathbf{RU}\label{eq:F-polar}
+\end{equation}
+
+\end_inset
+
+The principal stretches, 
+\begin_inset Formula $\lambda_{1}$
+\end_inset
+
+, 
+\begin_inset Formula $\lambda_{2}$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda_{3}$
+\end_inset
+
+, were then found as the eigenvalues of 
+\begin_inset Formula $\mathbf{U}$
+\end_inset
+
+.
+ One of the principal stretches, which we shall designate 
+\begin_inset Formula $\lambda_{3}$
+\end_inset
+
+, was set equal to 1 by the method outlined at the end of Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sub:F"
+
+\end_inset
+
+.
+ However, it is likely that some Poisson strain occurred, and setting this
+ strain to zero (which happens when 
+\begin_inset Formula $\lambda_{3}=1$
+\end_inset
+
+) is possibly un-realistic.
+ Instead, it was assumed that the material was incompressible (isochoric)
+ as a first-order approximation, and thus:
+\begin_inset Formula 
+\begin{equation}
+\lambda_{3}=\frac{1}{\lambda_{1}\lambda_{2}}
+\end{equation}
+
+\end_inset
+
+
+\begin_inset Formula $I_{1}$
+\end_inset
+
+ was then given as the sum of the squares of the principal stretches:
+\begin_inset Formula 
+\begin{equation}
+\begin{aligned}I_{1} & =\lambda_{1}^{2}+\lambda_{2}^{2}+\lambda_{3}^{2}\\
+ & =\lambda_{1}^{2}+\lambda_{2}^{2}+\left(\frac{1}{\lambda_{1}\lambda_{2}}\right)^{2}
+\end{aligned}
+\end{equation}
+
+\end_inset
+
+The code responsible for this computation is found in 
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.MarkerGrid.lCauchyGreenI1()"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/MarkerGrid.scala"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Computation of the Biot strain tensor (
+\begin_inset Formula $\mathbf{\epsilon}_{b}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+Having found 
+\begin_inset Formula $\mathbf{F}$
+\end_inset
+
+, the Biot strain tensor, 
+\begin_inset Formula $\mathbf{\epsilon}_{b}$
+\end_inset
+
+, was found by first computing the right stretch tensor, 
+\begin_inset Formula $\mathbf{U}$
+\end_inset
+
+, as shown in Equation
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "eq:F-polar"
+
+\end_inset
+
+, and then by computing:
+\begin_inset Formula 
+\begin{equation}
+\mathbf{\epsilon}_{b}=\mathbf{U}-\mathbf{I}
+\end{equation}
+
+\end_inset
+
+This is performed in 
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.MarkerGrid.biot()"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/MarkerGrid.scala"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsubsection
+Computation of the Biot strain rate tensor (
+\begin_inset Formula $\mathbf{\dot{\epsilon}}_{b}$
+\end_inset
+
+)
+\end_layout
+
+\begin_layout Standard
+The biot strain rate tensor was found by evaluating the Biot strain tensor
+ between adjacent samples and then dividing by the sampling period.
+ This is performed in 
+\begin_inset CommandInset href
+LatexCommand href
+name "skintwitch.MarkerGrid.biotRate()"
+target "https://github.com/lancelet/skintwitch/blob/master/src/main/scala/skintwitch/MarkerGrid.scala"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Batch analysis of all results
+\end_layout
+
+\begin_layout Subsection
+High quality visualization of individual trials (non real-time)
+\end_layout
+
+\begin_layout Standard
+(To be completed...)
+\end_layout
+
+\begin_layout Section
+Free / Libre open source ideology
+\end_layout
+
+\begin_layout Standard
+The source code for this project was development using only free / libre
+ open source software, and is itself made available under an open source
+ license.
+ This was done so that there are no dependencies upon any closed-source
+ software, or proprietary software which must be purchased, and thus anyone
+ may freely inspect all methods used in this study without prejudice.
+ Further, scientific reviewers of the project, or those who wish to replicate
+ our result, are also free to do so without the requirement to purchase
+ any external software packages.
+ Complete documentation of methods and removal of all barriers to replication
+ are considered by the author to be of critical importance for all science.
+\end_layout
+
+\begin_layout Standard
+This approach comes with the cost of decentralization.
+ Instead of relying upon a single monolithic analysis package (for example:
+ Matlab), the code instead depends upon a distributed set of smaller packages
+ which perform more specific tasks.
+ These more numerous, smaller dependencies raise the barrier slightly to
+ those who would like to compile and run the code, since some of the dependencie
+s (in particular the VTK library) must be found manually.
+ However, a great deal of manual dependency management is not required due
+ to the Maven and Ivy dependency tracking mechanisms of the Java ecosystem.
+\end_layout
+
+\begin_layout Section
+Compiling and running code
+\end_layout
+
+\begin_layout Standard
+In order to compile and run the code, a Java Virtual Machine (JVM) and xsbt
+ (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/harrah/xsbt
+\end_layout
+
+\end_inset
+
+) must be installed.
+ Please see the external documentation for these tools, which provide detailed
+ instructions on how to install them.
+ The code should operate consistently across many common platforms (for
+ example: MS Windows, Linux and Apple OS X), but has only been tested and
+ developed under OS X.
+\end_layout
+
+\begin_layout Standard
+Additionally, VTK (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.vtk.org/
+\end_layout
+
+\end_inset
+
+) Java bindings must be available on the target platform.
+ This is a more involved process, for which little documentation is available.
+ The VTK Java bindings for Mac OS X (working under OS X 10.6.8 Snow Leopard)
+ are available as part of the source download for the project (see below).
+ If VTK difficulties are encountered, please contact the author at the email
+ address given at the top of this document.
+ VTK is not required for the frequency or batch analyses (steps 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:freq-analysis"
+
+\end_inset
+
+ and 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:batch-analysis"
+
+\end_inset
+
+ described in Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:analysis-phases"
+
+\end_inset
+
+ above), so it is conceivable that the these analyses could be run by removing
+ or commenting out all code related to VTK.
+ However, there is no automatic provision for this depenency removal in
+ the code base, and such editing would have to be done manually at this
+ stage.
+\end_layout
+
+\begin_layout Standard
+The code can be acquired from 
+\noun on
+GitHub
+\noun default
+ at this URL: 
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lancelet/skintwitch
+\end_layout
+
+\end_inset
+
+.
+ Generally, the code is downloaded using the 
+\noun on
+git
+\noun default
+ revision control system (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://git-scm.com/
+\end_layout
+
+\end_inset
+
+).
+ For example, under OS X, the code can be acquired and built using the following
+ commands (console log):
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\footnotesize\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+$ git clone git://github.com/lancelet/skintwitch.git
+\end_layout
+
+\begin_layout Plain Layout
+
+Cloning into skintwitch...
+\end_layout
+
+\begin_layout Plain Layout
+
+$ cd skintwitch
+\end_layout
+
+\begin_layout Plain Layout
+
+$ sbt
+\end_layout
+
+\begin_layout Plain Layout
+
+...
+ miscellaneous sbt output ...
+\end_layout
+
+\begin_layout Plain Layout
+
+> compile
+\end_layout
+
+\begin_layout Plain Layout
+
+...
+ miscellaneous sbt output ...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\noun on
+sbt
+\noun default
+ will complain if VTK is not available for your platform.
+ Once compiled, the project code can be run:
+\begin_inset listings
+lstparams "basicstyle={\footnotesize\ttfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+> run
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+Multiple main classes detected, select one to run:
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+ [1] skintwitch.BandwidthAnalysis
+\end_layout
+
+\begin_layout Plain Layout
+
+ [2] skintwitch.AqsisRender
+\end_layout
+
+\begin_layout Plain Layout
+
+ [3] skintwitch.VtkStrainViz
+\end_layout
+
+\begin_layout Plain Layout
+
+ [4] skintwitch.analysis.Analysis
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+Enter number:  
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The different main classes correspond to different parts of the analysis:
+\end_layout
+
+\begin_layout Description
+BandwidthAnalysis The frequency analysis of Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:analysis-phases"
+
+\end_inset
+
+, step
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:freq-analysis"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Description
+AqsisRender The high quality rendering process of Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:analysis-phases"
+
+\end_inset
+
+, step
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:aqsis-viz"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Description
+VtkStrainViz The real-time VTK visualization, of Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:analysis-phases"
+
+\end_inset
+
+, step
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:vtk-viz"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Description
+Analysis The batch analysis, of Section
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "sec:analysis-phases"
+
+\end_inset
+
+, step
+\begin_inset space ~
+\end_inset
+
+
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "enu:batch-analysis"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Any of these different stages may be executed by entering the corresponding
+ number and pressing 
+\noun on
+Enter
+\noun default
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "bibliography"
+options "chicago"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section*
+Appendix: Tools used
+\end_layout
+
+\begin_layout Standard
+The software was developed using the following open source tools and libraries:
+\end_layout
+
+\begin_layout Itemize
+Scala 2.9.0 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.scala-lang.org
+\end_layout
+
+\end_inset
+
+).
+ Scala is a general-purpose programming language which can run on the Java
+ Virtual Machine (JVM).
+ All source code for the project was written in Scala.
+\end_layout
+
+\begin_layout Itemize
+xsbt 10.0.1 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/harrah/xsbt
+\end_layout
+
+\end_inset
+
+).
+ SBT is the Simple Build Tool for Scala.
+ It handles compilation, test execution and program execution for Scala
+ code in development.
+\end_layout
+
+\begin_layout Itemize
+Eclipse 3.7; Indigo (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.eclipse.org/
+\end_layout
+
+\end_inset
+
+).
+ Eclipse is an Integrated Development Environment (IDE) used to edit source
+ code.
+\end_layout
+
+\begin_layout Itemize
+Scala IDE -- nightly release (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.scala-ide.org/
+\end_layout
+
+\end_inset
+
+).
+ This is a plugin for Eclipse to provide Scala language support.
+ At the time of the project, the nighly release was tracking after version
+ 2.0.0 beta 8.
+\end_layout
+
+\begin_layout Itemize
+sbteclipse 1.2 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/typesafehub/sbteclipse
+\end_layout
+
+\end_inset
+
+).
+ sbteclipse is an SBT plugin to create projects for Eclipse.
+\end_layout
+
+\begin_layout Itemize
+VTK 5.6.1 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.vtk.org/
+\end_layout
+
+\end_inset
+
+).
+ VTK---the Visualization ToolKit---is a toolkit for 3D scientific visualization.
+\end_layout
+
+\begin_layout Itemize
+Aqsis Renderer (custom build) (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://aqsis.org/
+\end_layout
+
+\end_inset
+
+).
+ Aqsis is a 3D renderer compliant with Pixar's RenderMan Interface Specification.
+ Used for creating high-quality visualization output.
+\end_layout
+
+\begin_layout Itemize
+JFreeChart 1.0.13 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://jfree.org/jfreechart/
+\end_layout
+
+\end_inset
+
+).
+ JFreeChart is a chart creation library for Java.
+\end_layout
+
+\begin_layout Itemize
+Apache XML Graphics 1.3.1 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://xmlgraphics.apache.org/
+\end_layout
+
+\end_inset
+
+).
+ XML Graphics is a toolkit for generating graphics from XML.
+ In this project, it was used for SVG output.
+\end_layout
+
+\begin_layout Itemize
+iText 2.1.5 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://itextpdf.com/
+\end_layout
+
+\end_inset
+
+).
+ A library for PDF creation.
+ Used to enable PDF plot output.
+\end_layout
+
+\begin_layout Itemize
+MiGLayout 3.7.4 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.miglayout.com/
+\end_layout
+
+\end_inset
+
+).
+ A Java layout manager.
+ Used to assist in easier GUI creation.
+\end_layout
+
+\begin_layout Itemize
+Lift JSON 2.4 M2 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lift/framework/tree/master/core/json
+\end_layout
+
+\end_inset
+
+).
+ Scala library for reading and writing files in JavaScript Object Notation
+ (JSON).
+\end_layout
+
+\begin_layout Itemize
+EJML 0.17 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://code.google.com/p/efficient-java-matrix-library/
+\end_layout
+
+\end_inset
+
+).
+ Efficient Java Matrix Library.
+ Used for non-trivial matrix operations.
+\end_layout
+
+\begin_layout Itemize
+LyX 2.0.0 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://lyx.org
+\end_layout
+
+\end_inset
+
+).
+ This document was created using LyX, a WYSIWYG front-end for LaTeX.
+\end_layout
+
+\begin_layout Itemize
+MacTeX 2010 (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+http://www.tug.org/mactex/
+\end_layout
+
+\end_inset
+
+).
+ A LaTeX distribution for Apple OS X.
+\end_layout
+
+\begin_layout Standard
+In addition, the following open source libraries were developed in conjunction
+ with the project (although not necessarily completely within its scope):
+\end_layout
+
+\begin_layout Itemize
+scalasignal (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lancelet/scalasignal
+\end_layout
+
+\end_inset
+
+).
+ A library for signal processing in Scala.
+ Used for low-pass filtering of marker coordinates.
+\end_layout
+
+\begin_layout Itemize
+mocaputils (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lancelet/mocaputils
+\end_layout
+
+\end_inset
+
+).
+ A library for motion capture processing.
+ Used to read Motion Analysis TRC files, obtain marker coordinates, fill
+ gaps in markers, etc.
+\end_layout
+
+\begin_layout Itemize
+scalari (
+\begin_inset Flex URL
+status collapsed
+
+\begin_layout Plain Layout
+
+https://github.com/lancelet/scalari
+\end_layout
+
+\end_inset
+
+).
+ Scala language bindings for Pixar's RenderMan interface.
+\end_layout
+
+\end_body
+\end_document
