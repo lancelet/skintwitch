@@ -68,7 +68,9 @@ case class Mat3(
         e31 * m.e12 + e32 * m.e22 + e33 * m.e32,
         e31 * m.e13 + e32 * m.e23 + e33 * m.e33)
   
-  /** Polar decomposition. */
+  lazy val trace: Double = e11 + e22 + e33
+        
+  /** Polar decomposition: this = R * U, where R is a rotation matrix. */
   lazy val polar: (Mat3, Mat3) = {
     val svd = simpleMatrix.svd
     val (u, w, v) = (fromSimpleMatrix(svd.getU),

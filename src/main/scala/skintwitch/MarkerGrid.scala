@@ -202,6 +202,26 @@ trait MarkerGrid extends Grid[Marker] { self =>
     // return the build mesh
     new TriMesh(verts, faceBuilder.result, Some(texCoords))
   }
+
+  /** Computes a vector in the parametric u direction (along increasing
+   *  columns. */
+  def uvec(s: Int, row: Int, col: Int): Vec3 = {
+    val (c0, c1) = if (col < numCols - 1) (col, col + 1)
+                   else (col - 1, col)
+    val x0 = Vec3(this(row, c0).co(s))
+    val x1 = Vec3(this(row, c1).co(s))
+    (x1 - x0).n
+  }
+  
+  /** Computes a vector in the parametric v direction (along increasing
+   *  rows. */
+  def vvec(s: Int, row: Int, col: Int): Vec3 = {
+    val (r0, r1) = if (row < numRows - 1) (row, row + 1)
+                   else (row - 1, row)
+    val x0 = Vec3(this(r0, col).co(s))
+    val x1 = Vec3(this(r1, col).co(s))
+    (x1 - x0).n
+  }
   
   /** Computes the Biot strain tensor in 2D, over the surface of the grid. 
    *
@@ -225,20 +245,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
                                       vvec(row, col),
                                       b3(row, col))
       }
-      private def uvec(row: Int, col: Int): Vec3 = {
-        val (c0, c1) = if (col < numCols - 1) (col, col + 1)
-                       else (col - 1, col)
-        val x0 = Vec3(self(row, c0).co(s0))
-        val x1 = Vec3(self(row, c1).co(s0))
-        x1 - x0
-      }
-      private def vvec(row: Int, col: Int): Vec3 = {
-        val (r0, r1) = if (row < numRows - 1) (row, row + 1)
-                       else (row - 1, row)
-        val x0 = Vec3(self(r0, col).co(s0))
-        val x1 = Vec3(self(r1, col).co(s0))
-        x1 - x0
-      }
+      private def uvec(row: Int, col: Int): Vec3 = self.uvec(s0, row, col)
+      private def vvec(row: Int, col: Int): Vec3 = self.vvec(s0, row, col)
       private def normal(row: Int, col: Int): Vec3 = {
         val adj = self.getFullAdjacent(row, col)
         val q = adj.map(rc => self(rc._1, rc._2).co(s0)).map(Vec3(_))
