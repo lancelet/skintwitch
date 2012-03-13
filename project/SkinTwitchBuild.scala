@@ -6,7 +6,7 @@ import java.io.File
 
 object BuildSettings {
   val buildOrganization = "com.github.skintwitch"
-  val buildScalaVersion = "2.9.1"
+  val buildScalaVersion = "2.9.1-1"
   val buildVersion      = "0.1-SNAPSHOT"
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization    := buildOrganization,
@@ -17,26 +17,29 @@ object BuildSettings {
 }
 
 object Resolvers {
-  val scalaToolsSnapshots = "Scala-Tools Snapshots" at
-    "http://scala-tools.org/repo-snapshots"
+  //val scalaToolsSnapshots = "Scala-Tools Snapshots" at
+  //  "http://scala-tools.org/repo-snapshots"
   val ondex = "Ondex" at
     "http://ondex.rothamsted.bbsrc.ac.uk/nexus/content/groups/public"
   val migLayout = "MigLayout" at
     "http://www.miglayout.com/mavensite/"
   val artenum = "Artenum" at 
     "http://maven.artenum.com/content/repositories/thirdparty/"
-  val allResolvers = Seq(scalaToolsSnapshots, ondex, migLayout, artenum)
+  val sonatype = "Sonatype" at
+  	"https://oss.sonatype.org/content/groups/public"
+  val allResolvers = Seq(/*scalaToolsSnapshots,*/ ondex, migLayout, artenum, 
+	sonatype)
 }
 
 object Dependencies {
-  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.1"
-  val scalaTest   = "org.scalatest" %% "scalatest" % "1.6.1" % "test"
+  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.1-1"
+  val scalaTest   = "org.scalatest" %% "scalatest" % "1.7.1" % "test"
   val jCommon     = "org.jfree" % "jcommon" % "1.0.17"
   val jFreechart  = "org.jfree" % "jfreechart" % "1.0.14"
   val xmlGraphics = "org.apache.xmlgraphics" % "xmlgraphics-commons" % "1.4"
   val iText       = "com.lowagie" % "itext" % "2.1.5" intransitive()
   val migLayout   = "com.miglayout" % "miglayout-swing" % "4.2"
-  val liftjson    = "net.liftweb" %% "lift-json" % "2.4"
+  val liftjson    = "net.liftweb" %% "lift-json" % "2.5-SNAPSHOT"
   val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
                         "0.18"
   val vtk         = "vtk" % "vtk" % "5.6.1"
