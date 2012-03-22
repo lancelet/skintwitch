@@ -1,0 +1,81 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+\documentclass[a4paper,11pt,abstract=false]{scrartcl}
+\usepackage[utf8]{inputenc}
+
+%%% CM Bright document (nicer fonts)
+\usepackage{cmbright}
+
+%%% Page dimensions
+\usepackage[lmargin=2.2cm,rmargin=2.2cm,tmargin=2.5cm,bmargin=2.5cm,footskip=1.5cm,headsep=1.0cm]{geometry}
+\usepackage{subfig}
+\usepackage{graphicx}
+
+%%% Packages
+\usepackage{amsmath}
+\usepackage{booktabs} % better looking tables
+\usepackage{paralist} % customizable lists
+\usepackage{verbatim} % better verbatim
+\usepackage[round,comma]{natbib}
+\usepackage{multicol}
+\usepackage{setspace}
+\usepackage[compact]{titlesec}
+
+%%% EXTRA MATH OPERATORS AND SYMBOLS
+\DeclareMathOperator{\tr}{tr}
+\newcommand{\vect}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\matr}[1]{\ensuremath{\mathbf{#1}}}
+\newcommand{\eterm}{\ensuremath{e ^ {-\frac{x^2 + y^2}{2 \sigma^2}}}}
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+%\pagestyle{fancy}
+%\fancyhf{}
+%\renewcommand{\headrulewidth}{0.5pt} % customise the layout...
+%\lhead{Solid Mechanics MCEN40024}\chead{}\rhead{FEA Assignment 1: Load Cell}
+%\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% Title information
+\title{Analytical Test Function for Skin Twitch Analysis Error Assessment}
+\author{Jonathan Merritt}
+\date{22 March 2011}
+
+%%% Document begins here
+\begin{document}
+\maketitle
+
+\section{Test Function}
+
+We will use a 2D Gaussian centred at $(0,0)$:
+\begin{equation}
+	P(x,y) = k \eterm
+\end{equation}
+The vector displacement field can then be found as the gradient of $P$:
+\begin{equation}
+	\begin{aligned}
+		\vect{g}(x,y) &= \nabla P \\
+		&= \left(\hat{\imath}x + \hat{\jmath}y\right)
+			\frac{-k}{\sigma^2} \eterm \\
+	\end{aligned}
+\end{equation}
+The Jacobian matrix of the displacement field is:
+\begin{equation}
+	\begin{aligned}
+		\matr{J}(x,y) &= \frac{k}{\sigma^2} \begin{bmatrix}
+			\frac{x^2}{\sigma^2}-1 & \frac{xy}{\sigma^2} \\
+			\frac{xy}{\sigma^2} & \frac{y^2}{\sigma^2}-1
+		\end{bmatrix} \eterm
+	\end{aligned}
+\end{equation}
+Finally, the deformation gradient tensor is:
+\begin{equation}
+	\begin{aligned}
+		\matr{F}(x,y) &= \matr{J} + \matr{I} \\
+		&= \frac{k}{\sigma^4} \begin{bmatrix}
+			x^2 & xy \\
+			xy & y^2
+		\end{bmatrix} \eterm
+	\end{aligned}
+\end{equation}
+
+\end{document}
