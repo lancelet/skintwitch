@@ -53,13 +53,13 @@ object SkinTwitchBuild extends Build {
     val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
       "vtk/vtk-native/5.8.0/"
     val vtkNativeURL = vtkRepo + 
-      "vtk-native-5.8.0-linux-x86_64.tgz"
-    val destFile = new File("./lib/vtk-native.tgz")
+      "vtk-native-5.8.0-linux-x86_64.zip"
+    val destFile = new File("./lib/vtk-native.zip")
     IO.download(new URL(vtkNativeURL), destFile)
-    def untar() {
-      "tar -xzf ./lib/vtk-native.tgz -C ./lib" !
+    def unzip() {
+      "unzip -j ./lib/vtk-native.zip -d ./lib" !
     }
-    untar
+    unzip
     state
   }
   
@@ -77,11 +77,8 @@ object SkinTwitchBuild extends Build {
     state
   }
 
-  val vtkNativePath = if (System.getProperty("os.name") == "Mac OS X") {
-    "-Djava.library.path=./lib/"
-  } else {
-    "-Djava.library.path=./lib/vtk-native-5.8.0-linux-x86_32-glibc2_7-jvm1_6/"
-  }
+  val vtkNativePath = "-Djava.library.path=./lib/"
+  
   //println("vtkNativePath = %s" format vtkNativePath)
   val extraHeap = "-Xmx2048M"
   val runOptions = Seq(vtkNativePath, extraHeap)
