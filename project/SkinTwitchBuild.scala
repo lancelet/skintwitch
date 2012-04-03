@@ -36,7 +36,7 @@ object Dependencies {
   val liftjson    = "net.liftweb" %% "lift-json" % "2.5-SNAPSHOT"
   val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
                         "0.18"
-  val vtk         = "vtk" % "vtk" % "5.6.1"
+  val vtk         = "vtk" % "vtk" % "5.8.0"
   val allDependencies = Seq(
     scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText, migLayout,
     liftjson, ejml, vtk
@@ -51,9 +51,9 @@ object SkinTwitchBuild extends Build {
   // Fetches native VTK files for Linux (x86_32, glibc2_7)
   def vtkNativeLinux = Command.command("vtkNativeLinux") { state =>
     val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
-      "vtk/vtk-native/5.6.1/"
+      "vtk/vtk-native/5.8.0/"
     val vtkNativeURL = vtkRepo + 
-      "vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6.tgz"
+      "vtk-native-5.8.0-linux-x86_64.tgz"
     val destFile = new File("./lib/vtk-native.tgz")
     IO.download(new URL(vtkNativeURL), destFile)
     def untar() {
@@ -66,8 +66,8 @@ object SkinTwitchBuild extends Build {
   // Fetches native VTK files for OS X (x86_64)
   def vtkNativeOSX = Command.command("vtkNativeOSX") { state =>
     val vtkRepo = "http://maven.artenum.com/content/repositories/thirdparty/" +
-      "vtk/vtk-native/5.6.1/"
-    val vtkNativeURL = vtkRepo + "vtk-native-5.6.1-osx-x86_64.zip"
+      "vtk/vtk-native/5.8.0/"
+    val vtkNativeURL = vtkRepo + "vtk-native-5.8.0-osx-x86_64.zip"
     val destFile = new File("./lib/vtk-native.zip")
     IO.download(new URL(vtkNativeURL), destFile)
     def unzip() {
@@ -80,7 +80,7 @@ object SkinTwitchBuild extends Build {
   val vtkNativePath = if (System.getProperty("os.name") == "Mac OS X") {
     "-Djava.library.path=./lib/"
   } else {
-    "-Djava.library.path=./lib/vtk-native-5.6.1-linux-x86_32-glibc2_7-jvm1_6/"
+    "-Djava.library.path=./lib/vtk-native-5.8.0-linux-x86_32-glibc2_7-jvm1_6/"
   }
   //println("vtkNativePath = %s" format vtkNativePath)
   val extraHeap = "-Xmx2048M"
