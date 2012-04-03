@@ -12,23 +12,17 @@ object BuildSettings {
     organization    := buildOrganization,
     scalaVersion    := buildScalaVersion,
     version         := buildVersion
-    /*offline         := true*/
   )
 }
 
 object Resolvers {
-  //val scalaToolsSnapshots = "Scala-Tools Snapshots" at
-  //  "http://scala-tools.org/repo-snapshots"
-  val ondex = "Ondex" at
-    "http://ondex.rothamsted.bbsrc.ac.uk/nexus/content/groups/public"
   val migLayout = "MigLayout" at
     "http://www.miglayout.com/mavensite/"
   val artenum = "Artenum" at 
     "http://maven.artenum.com/content/repositories/thirdparty/"
   val sonatype = "Sonatype" at
   	"https://oss.sonatype.org/content/groups/public"
-  val allResolvers = Seq(/*scalaToolsSnapshots,*/ ondex, migLayout, artenum, 
-	sonatype)
+  val allResolvers = Seq(migLayout, artenum, sonatype)
 }
 
 object Dependencies {
