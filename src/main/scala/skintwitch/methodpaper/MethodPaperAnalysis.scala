@@ -23,4 +23,26 @@ object MethodPaperAnalysis extends App {
   println("Using ONLY trials for %s" format horse)
   val inTrials = InputMarshalling.getTrials(dataDir).filter(_.horse == horse)
   
+  //--------------------------------------------------------------------------
+  // Load all trials for horse 11.
+  // This involves mapping each TrialInput object to a MethodPaperTrial object.
+  // In doing so, we perform most of the processing required, leaving us free
+  // to query the MethodPaperTrial object for information we need.
+  println("Processing trials for %s" format horse)
+  val trials = (for (inTrial <- inTrials.par) yield {
+    val trial = try {
+      MethodPaperTrial(inTrial)
+    } catch { // CAUTION: INDISCRIMINATE EXCEPTION CATCHING: REPORT ALL BELOW
+      case e => {
+        println("Exception loading trial %s" format inTrial.inputFile.getName)
+        println ("%s" format e)
+        throw new Exception(e)
+      }
+    }
+    System.out.println("Loaded trial %s" format inTrial.inputFile.getName)
+    System.out.flush
+    trial
+  }).seq
+  println("Loaded %d trials" format trials.length)
+  
 }
