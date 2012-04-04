@@ -132,13 +132,12 @@ case class MethodPaperTrial(
     maxCandidate
   }
   
-  // find the principal strain with the largest magnitude at the maximum
-  //  response sample
-  val maxMagPrinStrainAtMaxResponse: Double = {
-    import MethodPaperTrial.maxabs
+  // find the minimum principal strain (compressive) with the largest
+  //  magnitude at the maximum response sample
+  val minPrinStrainAtMaxResponse: Double = {
     val biotGrid = markerGrid.biot(refSample, maxResponseSample)
-    def maxPS(m: Mat3): Double = maxabs(m.eigSymm.map(_._1))
-    maxabs(biotGrid.map(maxPS(_)).rowMajor)
+    def minPS(m: Mat3): Double = m.eigSymm.map(_._1).min
+    biotGrid.rowMajor.map(minPS(_)).min
   }
   
 }
@@ -204,14 +203,5 @@ object MethodPaperTrial {
     * @return clamped value */
   def clamp(x: Int, minX: Int, maxX: Int): Int =
     if (x < minX) minX else if (x > maxX) maxX else x
-  
-  /** Returns the maximum absolute value from a sequence of doubles.
-    * 
-    * @param s sequence of doubles
-    * @return double with the maximum absolute value */
-  def maxabs(s: Seq[Double]): Double = {
-    val szips = s zip (s.map(math.abs(_)))
-    szips.maxBy(_._2)._1
-  }
     
 }
