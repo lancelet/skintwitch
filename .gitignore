@@ -31,3 +31,4 @@ maps
 *.zip
 lib/.*
 *.bak
+.target
