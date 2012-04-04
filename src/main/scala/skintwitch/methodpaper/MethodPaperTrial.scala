@@ -1,13 +1,13 @@
 package skintwitch.methodpaper
 
 import scala.collection.immutable._
-
 import java.io.File
 import mocaputils.GapFiller
 import mocaputils.Marker
 import mocaputils.TRCReader
 import mocaputils.VirtualMarker
 import skintwitch.MarkerGrid
+import skintwitch.Mat3
 import skintwitch.analysis.TrialInput
 
 
@@ -111,6 +111,35 @@ case class MethodPaperTrial(
     }
   }
   assert(refSample >= 0 && refSample < nSamples) // sanity check range
+
+  // compute the grid average of the first invariant of the left Cauchy-Green 
+  //  Deformation tensor at each time sample.  this is computed over all
+  //  samples, but only the samples after the poke are relevant.
+  val i1: IndexedSeq[Double] = for {
+    i <- 0 until nSamples
+  } yield markerGrid.avgLCauchyGreenI1(refSample, i)
+
+  // find the sample where the maximum twitch response occurs.  this is the
+  //  first peak in the i1 values following the poke.
+  val maxResponseSample: Int = {
+    // finite difference of successive i1 values
+    val i1dot = i1.zip(i1.tail).map(x => x._2 - x._1)
+    // firstPositive is when i1dot first becomes positive after the reference
+    val firstPositive = i1dot.indexWhere(_ > 0, refSample)
+    // new find where i1dot becomes negative after firstPositive
+    val maxCandidate = i1dot.indexWhere(_ < 0, firstPositive)
+    assert(maxCandidate > refSample && maxCandidate < nSamples)
+    maxCandidate
+  }
+  
+  // find the principal strain with the largest magnitude at the maximum
+  //  response sample
+  val maxMagPrinStrainAtMaxResponse: Double = {
+    import MethodPaperTrial.maxabs
+    val biotGrid = markerGrid.biot(refSample, maxResponseSample)
+    def maxPS(m: Mat3): Double = maxabs(m.eigSymm.map(_._1))
+    maxabs(biotGrid.map(maxPS(_)).rowMajor)
+  }
   
 }
 
@@ -176,4 +205,13 @@ object MethodPaperTrial {
   def clamp(x: Int, minX: Int, maxX: Int): Int =
     if (x < minX) minX else if (x > maxX) maxX else x
   
+  /** Returns the maximum absolute value from a sequence of doubles.
+    * 
+    * @param s sequence of doubles
+    * @return double with the maximum absolute value */
+  def maxabs(s: Seq[Double]): Double = {
+    val szips = s zip (s.map(math.abs(_)))
+    szips.maxBy(_._2)._1
+  }
+    
 }
