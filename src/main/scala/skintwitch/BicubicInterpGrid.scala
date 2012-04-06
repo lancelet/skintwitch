@@ -5,6 +5,14 @@ import scala.collection.immutable.Vector
 import scala.collection.immutable.VectorBuilder
 import scala.math.floor
 
+/** Bicubic interpolator over a grid of Doubles.
+  * 
+  * This class performs bicubic interpolation over a regular grid.  The apply()
+  * method can look up the interpolation at an arbitrary point.  The toGrid()
+  * method computes a one-off interpolation (as another Grid) at a particular
+  * resolution. 
+  * 
+  * @param g grid of Doubles to interpolate */
 case class BicubicInterpGrid(g: Grid[Double]) { outer =>
   
   private val ge: Grid[Double] = g.expandEdgesByOne()
