@@ -32,3 +32,5 @@ maps
 lib/.*
 *.bak
 .target
+.cache
+method-paper-output
