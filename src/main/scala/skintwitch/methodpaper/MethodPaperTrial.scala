@@ -9,6 +9,7 @@ import mocaputils.VirtualMarker
 import skintwitch.MarkerGrid
 import skintwitch.Mat3
 import skintwitch.analysis.TrialInput
+import skintwitch.Grid
 
 
 /** Analysis of a single trial for the method paper. 
@@ -139,6 +140,10 @@ case class MethodPaperTrial(
     def minPS(m: Mat3): Double = m.eigSymm.map(_._1).min
     biotGrid.rowMajor.map(minPS(_)).min
   }
+  
+  // WIP:
+  val i1AtMaxResponse: Grid[Double] = 
+    markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
   
 }
 

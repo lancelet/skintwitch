@@ -4,6 +4,7 @@ import java.io.File
 import skintwitch.analysis.InputMarshalling
 import skintwitch.analysis.TrialInput
 import java.io.FileWriter
+import skintwitch.GridDumper
 
 object MethodPaperAnalysis extends App {
 
@@ -28,6 +29,7 @@ object MethodPaperAnalysis extends App {
   val horse = "Horse11"
   println("Using ONLY trials for %s" format horse)
   val inTrials = InputMarshalling.getTrials(dataDir).filter(_.horse == horse)
+    //.filter(_.trialNumber == 17)  // un-comment to process just 1 sample trial
   
   //--------------------------------------------------------------------------
   // Load all trials for horse 11.
@@ -51,6 +53,14 @@ object MethodPaperAnalysis extends App {
   }).seq
   println("Loaded %d trials" format trials.length)
 
+  //---------------------------------------------------------------------------
+  // Dump out plots of i1 at maximum response
+  for (trial <- trials) {
+    val outfile = new File(outDir, "%s-%s-%d.png" format (trial.in.horse, 
+        trial.in.site, trial.in.trialNumber))
+    GridDumper.dump(outfile, trial.i1AtMaxResponse)
+  }
+  
   //---------------------------------------------------------------------------
   // Output data for the minimum principal strain at the point of maximum
   // twitch response.

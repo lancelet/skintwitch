@@ -3,7 +3,6 @@ package skintwitch
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
 import scala.collection.immutable.VectorBuilder
-import scala.math.floor
 
 /** Bicubic interpolator over a grid of Doubles.
   * 
@@ -15,47 +14,64 @@ import scala.math.floor
   * @param g grid of Doubles to interpolate */
 case class BicubicInterpGrid(g: Grid[Double]) { outer =>
   
+  private val numRowPatches = g.numRows - 1
+  private val numColPatches = g.numCols - 1
+  
   private val ge: Grid[Double] = g.expandEdgesByOne()
-  private case class GridSubSamp(i: Int, j: Int) extends IndexedSeq[Double] {
+  private case class GridSubSamp(r: Int, c: Int) extends IndexedSeq[Double] {
     val length: Int = 16
-    def apply(idx: Int): Double = ge(i + (idx % 4), j + (idx / 4))
+    def apply(idx: Int): Double = ge(r + (idx / 4), c + (idx % 4))
   }
   
   private val patches: IndexedSeq[BicubicDPatch] = {
     val vb = new VectorBuilder[BicubicDPatch]()
-    vb.sizeHint(g.numCols * g.numRows) 
+    vb.sizeHint(numRowPatches * numColPatches) 
     for {
-      j <- 0 until (g.numCols - 1)
-      i <- 0 until (g.numRows - 1)
+      r <- 0 until numRowPatches
+      c <- 0 until numColPatches
     } {
-      vb += BicubicDPatch(GridSubSamp(i, j))
+      vb += BicubicDPatch(GridSubSamp(r, c))
     }
     vb.result()
   }
+  private def getPatch(row: Int, col: Int) = {
+    require(row >= 0 && row < numRowPatches, 
+            "row %d out of range" format row)
+    require(col >= 0 && col < numColPatches,
+            "col %d out of range" format col)
+    col + row * (g.numCols - 1)
+  }
 
   def apply(u: Double, v: Double): Double = {
-    // find out which patch we're in, and the individual patch coords
-    val ue = u * (g.numCols - 1)
-    val ve = v * (g.numRows - 1)
-    val patchx = floor(ue).toInt
-    val patchy = floor(ve).toInt
-    val uu = ue - patchx
-    val vv = ve - patchy
+    require(u >= 0.0 && u <= 1.0)
+    require(v >= 0.0 && v <= 1.0)
     
+    // find which patch and patch coords
+    val ue = u * numColPatches
+    val ve = v * numRowPatches
+    val patchCol = {
+      val p = ue.toInt
+      if (p < numColPatches) p else numColPatches - 1
+    }
+    val patchRow = {
+      val p = ve.toInt
+      if (p < numRowPatches) p else numRowPatches - 1
+    }
+    val uu = ue % 1.0
+    val vv = ve % 1.0
+        
     // look-up in a single patch
-    val patchIdx = patchx + patchy * g.numCols
-    patches(patchIdx)(uu, vv)
+    patches(getPatch(patchRow, patchCol))(uu, vv)
   }
   
   def toGrid(nRows: Int, nCols: Int): Grid[Double] = VGrid[Double](
     new Grid[Double] {
       val numRows = nRows
       val numCols = nCols
-      def apply(row: Int, col: Int): Double = {
-        val u = row / (numRows - 1).toDouble
-        val v = col / (numCols - 1).toDouble
-        outer(u, v)
-      }
+      private val nRowPatches = (numRows - 1).toDouble
+      private val nColPatches = (numCols - 1).toDouble
+      def apply(row: Int, col: Int): Double =
+        outer(row / nRowPatches, col / nColPatches)
     }
   )
   
