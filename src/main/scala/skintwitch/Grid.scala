@@ -6,9 +6,9 @@ import scala.collection.immutable._
 trait Grid[T] { self =>
   
   /** Number of rows in the grid. */
-  val numRows: Int
+  def numRows: Int
   /** Number of columns in the grid. */
-  val numCols: Int
+  def numCols: Int
   
   /** Fetch an element from the grid. */
   def apply(row: Int, col: Int): T
