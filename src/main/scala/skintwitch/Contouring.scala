@@ -178,7 +178,8 @@ object Contouring {
   def bicubicInterp(grid: Grid[Double], numRows: Int, numCols: Int): 
   Grid[Double] =
   {
-    val eGrid = grid.expandEdgesByOne
+    val eGrid = grid.expandEdgesByOne()(
+        () => Linearizable.doubleMultiplyableToLinearizable[Double])
     val p = (for {
       row <- 0 until eGrid.numRows
       col <- 0 until eGrid.numCols

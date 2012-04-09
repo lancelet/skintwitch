@@ -12,6 +12,7 @@ import skintwitch.Mat2
 import signal.Butter
 import signal.FiltFilt
 import skintwitch.Vec3
+import skintwitch.Linearizable
 
 /** A trial; encompassing much of the processing required for an individual
  *  trial.
@@ -243,7 +244,8 @@ case class Trial(
     if (pokeLocation.isDefined) {
       val (s, t) = pokeLocation.get
       val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
-      Some(i1Grid.interpUV(s, t))
+      Some(i1Grid.interpUV(s, t)(
+          () => Linearizable.doubleMultiplyableToLinearizable[Double]))
     } else {
       None
     }
