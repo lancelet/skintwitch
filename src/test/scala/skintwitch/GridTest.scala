@@ -29,7 +29,8 @@ class GridTest extends FunSuite with ShouldMatchers {
       val numCols = 2
       def apply(row: Int, col: Int) = a(row)(col)
     }
-    val m = testGrid.subdivide()
+    val m = testGrid.subdivide()(
+        () => Linearizable.doubleMultiplyableToLinearizable[Double])
     val eps = 1e-10
     m.numRows should equal (3)
     m.numCols should equal (3)
@@ -50,6 +51,9 @@ class GridTest extends FunSuite with ShouldMatchers {
       val numRows = 2
       val numCols = 2
       def apply(row: Int, col: Int) = a(row)(col)
+    }
+    implicit val dl = {
+      () => Linearizable.doubleMultiplyableToLinearizable[Double]
     }
     val eps = 1e-10
     m.interpUV(0, 0) should be (0.0 plusOrMinus eps)
