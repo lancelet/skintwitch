@@ -194,4 +194,26 @@ trait Grid[T] { self =>
     l.lin(ci0, ci1, vf)
   }
   
+  /** Returns the (row, col) coordinates of the first occurrence of the 
+    * element with the maximum value. 
+    * 
+    * @return (row, col) coordinates */
+  def maxRowCol[Q >: T](implicit o: Ordering[Q]): (Int, Int) = {
+    var maxCol = 0
+    var maxRow = 0
+    var maxValue = apply(maxRow, maxCol)
+    for {
+      row <- 0 until numRows
+      col <- 0 until numCols
+      curValue = apply(row, col)
+    } {
+      if (o.gt(curValue, maxValue)) {
+        maxCol = col
+        maxRow = row
+        maxValue = curValue
+      }
+    }
+    (maxRow, maxCol)
+  }
+  
 }
