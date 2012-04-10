@@ -159,9 +159,21 @@ case class MethodPaperTrial(
     minPSGrid.rowMajor.min
   }
   
-  // WIP:
+  //--------------------------------------------------------------------------
+  // find the I1 grid (the first invariant of the Left Cauchy-Green
+  //  deformation tensor) at the maximum response
   val i1AtMaxResponse: Grid[Double] = 
     markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+  
+  //--------------------------------------------------------------------------
+  // find the UV coordinates of the maximum I1 (first invariant of the Left
+  //  Cauchy-Green deformation tensor). here we interpolate the grid at 10x
+  //  its original resolution
+  val maxI1AtMaxResponseUVCoords: (Double, Double) = {
+    val newRows = i1AtMaxResponse.numRows * 10
+    val newCols = i1AtMaxResponse.numCols * 10
+    BicubicInterpGrid(i1AtMaxResponse).toGrid(newRows, newCols).maxUV
+  }
   
 }
 

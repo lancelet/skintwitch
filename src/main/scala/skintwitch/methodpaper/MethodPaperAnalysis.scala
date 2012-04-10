@@ -55,11 +55,11 @@ object MethodPaperAnalysis extends App {
 
   //---------------------------------------------------------------------------
   // Dump out plots of i1 at maximum response
-  for (trial <- trials) {
-    val outfile = new File(outDir, "%s-%s-%d.png" format (trial.in.horse, 
-        trial.in.site, trial.in.trialNumber))
-    GridDumper.dump(outfile, trial.i1AtMaxResponse)
-  }
+  //for (trial <- trials) {
+  //  val outfile = new File(outDir, "%s-%s-%d.png" format (trial.in.horse, 
+  //      trial.in.site, trial.in.trialNumber))
+  //  GridDumper.dump(outfile, trial.i1AtMaxResponse)
+  //}
   
   //---------------------------------------------------------------------------
   // Output data for the minimum principal strain at the point of maximum
