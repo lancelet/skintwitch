@@ -215,5 +215,18 @@ trait Grid[T] { self =>
     }
     (maxRow, maxCol)
   }
+
+  /** Returns the (u, v) coordinates of the first occurrence of the element
+    * with the maximum value.
+    * 
+    * (u, v) coordinates are parametric coordinates within the grid.  u is a
+    * row-linked coordinate, while v is a column-linked coordinate.  both
+    * coordinates run from 0.0 to 1.0 inclusive.
+    * 
+    * @return (u, v) parametric coordinates */
+  def maxUV[Q >: T](implicit o: Ordering[Q]): (Double, Double) = {
+    val m = maxRowCol(o)
+    (m._1.toDouble / (numRows - 1), m._2.toDouble / (numCols - 1))
+  }
   
 }
