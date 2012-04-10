@@ -10,6 +10,7 @@ import skintwitch.MarkerGrid
 import skintwitch.Mat3
 import skintwitch.analysis.TrialInput
 import skintwitch.Grid
+import skintwitch.BicubicInterpGrid
 
 
 /** Analysis of a single trial for the method paper. 
@@ -30,9 +31,11 @@ case class MethodPaperTrial(
   backoffTime: Double = 0.0
 ) {
 
+  //--------------------------------------------------------------------------
   // form unique identifier string for the trial
   val idString = "%s_trial%s" format (in.horse, in.trialNumber)
   
+  //--------------------------------------------------------------------------
   // load markers and low-pass filter the marker positions from the trial
   private def markers: Seq[Marker] = {
     assert(m_markers != null)
@@ -43,6 +46,7 @@ case class MethodPaperTrial(
     loadMarkers(in.inputFile).map(_.butter2(cutoffFreq))
   }
   
+  //--------------------------------------------------------------------------
   // create marker grid
   private def markerGrid: MarkerGrid = {
     assert(m_markerGrid != null)
@@ -50,6 +54,7 @@ case class MethodPaperTrial(
   }
   private var m_markerGrid: MarkerGrid = MarkerGrid.fromCRMarkers(markers)
   
+  //--------------------------------------------------------------------------
   // extract number of samples and sampling frequency.  we just fetch them
   //  from the first marker of the grid, since they have to be the same for
   //  all markers.
@@ -57,6 +62,7 @@ case class MethodPaperTrial(
   val fs: Double = markerGrid(0, 0).fs
   assert(markers.forall(m => m.co.length == nSamples && m.fs == fs)) // check
   
+  //--------------------------------------------------------------------------
   // create virtual marker for the pointer tip
   private def pointer: Marker = {
     assert(m_pointer != null)
@@ -67,6 +73,7 @@ case class MethodPaperTrial(
     createPointerTipMarker(in.pointerFile, markers)
   }
   
+  //--------------------------------------------------------------------------
   // distanceAnnotated is the distance from the pointer tip to the grid,
   //  and a second tuple element indicating whether the pointer at the
   //  computed distance lies "within" the grid
@@ -84,6 +91,7 @@ case class MethodPaperTrial(
     } yield (distance, inGrid)
   }  
   
+  //--------------------------------------------------------------------------
   // the reference sample (when the poke occurs).  for Control trials,
   //  this is 0, while for Girthline trials, the reference sample is specified
   //  explicitly by 'start'.  the reference sample can be overridden by
@@ -113,6 +121,7 @@ case class MethodPaperTrial(
   }
   assert(refSample >= 0 && refSample < nSamples) // sanity check range
 
+  //--------------------------------------------------------------------------
   // compute the grid average of the first invariant of the left Cauchy-Green 
   //  Deformation tensor at each time sample.  this is computed over all
   //  samples, but only the samples after the poke are relevant.
@@ -120,6 +129,7 @@ case class MethodPaperTrial(
     i <- 0 until nSamples
   } yield markerGrid.avgLCauchyGreenI1(refSample, i)
 
+  //--------------------------------------------------------------------------
   // find the sample where the maximum twitch response occurs.  this is the
   //  first peak in the i1 values following the poke.
   val maxResponseSample: Int = {
@@ -133,12 +143,20 @@ case class MethodPaperTrial(
     maxCandidate
   }
   
+  //--------------------------------------------------------------------------
   // find the minimum principal strain (compressive) with the largest
-  //  magnitude at the maximum response sample
+  //  magnitude at the maximum response sample.  here we interpolate the grid
+  //  at 10x its original resolution.
   val minPrinStrainAtMaxResponse: Double = {
     val biotGrid = markerGrid.biot(refSample, maxResponseSample)
+    
     def minPS(m: Mat3): Double = m.eigSymm.map(_._1).min
-    biotGrid.rowMajor.map(minPS(_)).min
+    val newRows = biotGrid.numRows * 10
+    val newCols = biotGrid.numCols * 10
+    val minPSGrid = BicubicInterpGrid(biotGrid.map(minPS)).
+        toGrid(newRows, newCols)
+    
+    minPSGrid.rowMajor.min
   }
   
   // WIP:
