@@ -6,7 +6,7 @@ import java.io.File
 
 object BuildSettings {
   val buildOrganization = "com.github.skintwitch"
-  val buildScalaVersion = "2.9.1-1"
+  val buildScalaVersion = "2.9.2"
   val buildVersion      = "0.1-SNAPSHOT"
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization    := buildOrganization,
@@ -16,18 +16,18 @@ object BuildSettings {
 }
 
 object Resolvers {
-  val migLayout = "MigLayout" at
-    "http://www.miglayout.com/mavensite/"
+  //val migLayout = "MigLayout" at
+  //  "http://www.miglayout.com/mavensite/"
   val artenum = "Artenum" at 
     "http://maven.artenum.com/content/repositories/thirdparty/"
   val sonatype = "Sonatype" at
   	"https://oss.sonatype.org/content/groups/public"
-  val allResolvers = Seq(migLayout, artenum, sonatype)
+  val allResolvers = Seq(artenum, sonatype)
 }
 
 object Dependencies {
-  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.1-1"
-  val scalaTest   = "org.scalatest" %% "scalatest" % "1.7.1" % "test"
+  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.2"
+  val scalaTest   = "org.scalatest" %% "scalatest" % "1.7.2" % "test"
   val jCommon     = "org.jfree" % "jcommon" % "1.0.17"
   val jFreechart  = "org.jfree" % "jfreechart" % "1.0.14"
   val xmlGraphics = "org.apache.xmlgraphics" % "xmlgraphics-commons" % "1.4"

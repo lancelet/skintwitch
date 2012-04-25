@@ -62,6 +62,10 @@ object MethodPaperAnalysis extends App {
   //}
   
   //---------------------------------------------------------------------------
+  // Order trials by site.
+  val bySite = trials.sortBy(_.in.site)
+  
+  //---------------------------------------------------------------------------
   // Output data for the minimum principal strain at the point of maximum
   // twitch response.
   def saveMinPrinStrains() {
@@ -71,7 +75,6 @@ object MethodPaperAnalysis extends App {
       "Trial," +
       "Strain\n"
     )
-    val bySite = trials.sortBy(_.in.site)
     for (trial <- bySite) {
       o.write(trial.in.site + ", " + 
               trial.minPrinStrainAtMaxResponse + "\n")
@@ -79,5 +82,24 @@ object MethodPaperAnalysis extends App {
     o.close()
   }
   saveMinPrinStrains()
+  
+  //---------------------------------------------------------------------------
+  // Output data for the maximum I1 coordinates at the point of maximum twitch
+  // response.
+  def saveMaxI1Coords() {
+    val outFile = new File(outDir, "max-I1-coords.csv")
+    val o = new FileWriter(outFile)
+    o.write(
+      "Trial," +
+      "U (row)," +
+      "V (col)\n"
+    )
+    for (trial <- bySite) {
+      val uv = trial.maxI1AtMaxResponseUVCoords
+      o.write("%s, %f, %f\n" format (trial.in.site, uv._1, uv._2))
+    }
+    o.close()
+  }
+  saveMaxI1Coords()
   
 }
