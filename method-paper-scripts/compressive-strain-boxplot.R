@@ -2,7 +2,7 @@ library(tikzDevice)
 library(ggplot2)
 
 # Set working directory (hard coded)
-setwd("/Users/jsm/Documents/dev/skintwitch/method-paper-r-scripts")
+setwd("/Users/jsm/Documents/dev/skintwitch/method-paper-scripts")
 
 # Set TikZ options
 standAlone = FALSE
