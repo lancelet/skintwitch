@@ -28,6 +28,7 @@ class MarkerGridActor(grid: MarkerGrid) extends AnimatedActor {
     }
     val actor = new vtkActor {
       SetMapper(polyDataMapper)
+      GetProperty.SetColor(0.5, 0.5, 0.5)
     }
     Seq(actor)
   }

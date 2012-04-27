@@ -131,17 +131,21 @@ object MethodPaperAnalysis extends App {
       }
       
       // export Biot strain (E) grid
-      o.write("Biot strain (E) (7 rows, 8 columns) (v1x, v1y, v2x, v2y) ")
-      o.write("where v1 and v1 are principal strains\n")
+      o.write("Biot strain (E) (7 rows, 8 columns) ")
+      o.write("(v1x, v1y, v2x, v2y, lambda1, lambda2) ")
+      o.write("where v1 and v1 are principal strains directions and ")
+      o.write("lambda are the magnitudes.\n")
       for {
         row <- 0 until siteBiot2d.numRows
         col <- 0 until siteBiot2d.numCols
       } {
         val eigs = siteBiot2d(row, col).eig
         assert(eigs.length == 2)
-        val v1 = eigs(0)._2 * eigs(0)._1
-        val v2 = eigs(1)._2 * eigs(1)._1
-        o.write("(%f;%f;%f;%f)" format (v1.x, v1.y, v2.x, v2.y))
+        val l1 = eigs(0)._1
+        val l2 = eigs(1)._1
+        val v1 = eigs(0)._2
+        val v2 = eigs(1)._2
+        o.write("(%f;%f;%f;%f;%f;%f)" format (v1.x, v1.y, v2.x, v2.y, l1, l2))
         o.write(if (col < siteBiot2d.numCols - 1) ", " else "\n")
       }
       

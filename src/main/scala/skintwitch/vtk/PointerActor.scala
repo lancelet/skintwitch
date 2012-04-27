@@ -79,7 +79,7 @@ extends AnimatedActor {
     }
     val actor = new vtkActor {
       SetMapper(polyDataMapper)
-      GetProperty.SetColor(0.5, 1.0, 0.5)
+      GetProperty.SetColor(0.1, 0.5, 0.1)
       GetProperty.SetLineWidth(4.0)
     }
     Seq(actor, distActor)
@@ -118,7 +118,7 @@ extends AnimatedActor {
       if (dist < 0) {
         distActor.GetProperty.SetColor(1.0, 0.5, 0.5)
       } else {
-        distActor.GetProperty.SetColor(1.0, 1.0, 1.0)
+        distActor.GetProperty.SetColor(0.0, 0.0, 0.0)
       }
     } else {
       distActor.GetProperty.SetColor(0.2, 0.2, 0.2)

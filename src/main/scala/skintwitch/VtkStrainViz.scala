@@ -275,6 +275,8 @@ class VtkStrainViz {
     setInteractorStyle(new vtkInteractorStyleTrackballCamera)
     GetRenderWindow.LineSmoothingOn
     GetRenderWindow.PolygonSmoothingOn
+    GetRenderWindow.SetAAFrames(16)
+    GetRenderer.SetBackground(1, 1, 1)
   }
   private val vtkHostPanel = new JPanel(new BorderLayout()) {
     add(vtkPanel, BorderLayout.CENTER)

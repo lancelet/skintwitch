@@ -34,3 +34,6 @@ lib/.*
 .target
 .cache
 method-paper-output
+method-paper-scripts/.Rhistory
+method-paper-scripts/*.tex
+method-paper-scripts/*.svg
