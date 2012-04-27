@@ -36,6 +36,17 @@ object Averaging {
     def apply(row: Int, col: Int): Mat2 = mean(grids.map(_(row, col)))
   }
   
+  def meanGridDouble(grids: Seq[Grid[Double]]): Grid[Double] = 
+    new Grid[Double] {
+      val numRows = grids.head.numRows
+      val numCols = grids.head.numCols
+      assert(grids.forall(_.numRows == numRows))
+      assert(grids.forall(_.numCols == numCols))
+      private val nGrids: Float = grids.length.toFloat
+      def apply(row: Int, col: Int): Double = 
+        grids.map(_(row, col)).sum / nGrids
+    }
+  
   /** Returns the coordinates of the maximum value of a grid of Doubles. */
   def maxCoords(grid: Grid[Double]): (Int, Int) = {
     var rowMax = 0

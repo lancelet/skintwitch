@@ -1,6 +1,7 @@
 package skintwitch.methodpaper
 
 import java.io.File
+import skintwitch.analysis.Averaging
 import skintwitch.analysis.InputMarshalling
 import skintwitch.analysis.TrialInput
 import java.io.FileWriter
@@ -25,8 +26,8 @@ object MethodPaperAnalysis extends App {
   println("Using output directory: %s" format outDir.getCanonicalPath)
   
   //--------------------------------------------------------------------------
-  // Find input trials for horse 11.
-  val horse = "Horse11"
+  // Find input trials for horse 7.
+  val horse = "Horse7"
   println("Using ONLY trials for %s" format horse)
   val inTrials = InputMarshalling.getTrials(dataDir).filter(_.horse == horse)
     //.filter(_.trialNumber == 17)  // un-comment to process just 1 sample trial
@@ -91,15 +92,70 @@ object MethodPaperAnalysis extends App {
     val o = new FileWriter(outFile)
     o.write(
       "Trial," +
-      "U (row)," +
-      "V (col)\n"
+      "V (col / x)," +
+      "U (row / y)," +
+      "I_1(U, V) - 3," +
+      "\n"
     )
     for (trial <- bySite) {
       val uv = trial.maxI1AtMaxResponseUVCoords
-      o.write("%s, %f, %f\n" format (trial.in.site, uv._1, uv._2))
+      val i_uv = trial.i1AtMaxResponseInterp.rowMajor.max - 3.0
+      o.write("%s, %f, %f, %f\n" format (trial.in.site, uv._2, uv._1, i_uv))
     }
     o.close()
   }
   saveMaxI1Coords()
+  
+  //---------------------------------------------------------------------------
+  // Output average grids of I1 and Biot strain for each test site.
+  def saveAverageGrids() {
+    val sites = trials.map(_.in.site).toSet.toList.sorted
+    for {
+      site <- sites
+      trialsAtSite = trials.filter(_.in.site == site)
+    } {
+      val pokeLocs = trialsAtSite.map(_.pokeLocation)
+      val siteBiot2d = Averaging.mean(trialsAtSite.map(_.biot2d))
+      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid))
+      val outFile = new File(outDir, "avg-grid-%s.csv" format site)
+      val o = new FileWriter(outFile)
+      
+      // export I1 grid
+      o.write("I1 grid (7 rows, 8 columns)\n")
+      for {
+        row <- 0 until siteI1.numRows
+        col <- 0 until siteI1.numCols 
+      } {
+        o.write("%f" format siteI1(row, col))
+        o.write(if (col < siteI1.numCols - 1) ", " else "\n")
+      }
+      
+      // export Biot strain (E) grid
+      o.write("Biot strain (E) (7 rows, 8 columns) (v1x, v1y, v2x, v2y) ")
+      o.write("where v1 and v1 are principal strains\n")
+      for {
+        row <- 0 until siteBiot2d.numRows
+        col <- 0 until siteBiot2d.numCols
+      } {
+        val eigs = siteBiot2d(row, col).eig
+        assert(eigs.length == 2)
+        val v1 = eigs(0)._2 * eigs(0)._1
+        val v2 = eigs(1)._2 * eigs(1)._1
+        o.write("(%f;%f;%f;%f)" format (v1.x, v1.y, v2.x, v2.y))
+        o.write(if (col < siteBiot2d.numCols - 1) ", " else "\n")
+      }
+      
+      // export stimulus (poke) locations
+      o.write("Poke locations (u,v).  u is column-linked, v is row-linked.\n")
+      for (poke <- pokeLocs) {
+        if (poke.isDefined) {
+          o.write("%f, %f\n" format(poke.get._1, poke.get._2))
+        }
+      }
+      
+      o.close()
+    }
+  }
+  saveAverageGrids()
   
 }

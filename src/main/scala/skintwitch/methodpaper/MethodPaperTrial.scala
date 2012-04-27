@@ -11,6 +11,7 @@ import skintwitch.Mat3
 import skintwitch.analysis.TrialInput
 import skintwitch.Grid
 import skintwitch.BicubicInterpGrid
+import skintwitch.Mat2
 
 
 /** Analysis of a single trial for the method paper. 
@@ -166,15 +167,45 @@ case class MethodPaperTrial(
     markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
   
   //--------------------------------------------------------------------------
+  // interpolate the I1 grid at 10x resolution
+  val i1AtMaxResponseInterp: Grid[Double] =
+    BicubicInterpGrid(i1AtMaxResponse).toGrid(
+            i1AtMaxResponse.numRows * 10,
+            i1AtMaxResponse.numCols * 10
+        )
+    
+  //--------------------------------------------------------------------------
   // find the UV coordinates of the maximum I1 (first invariant of the Left
   //  Cauchy-Green deformation tensor). here we interpolate the grid at 10x
   //  its original resolution
-  val maxI1AtMaxResponseUVCoords: (Double, Double) = {
-    val newRows = i1AtMaxResponse.numRows * 10
-    val newCols = i1AtMaxResponse.numCols * 10
-    BicubicInterpGrid(i1AtMaxResponse).toGrid(newRows, newCols).maxUV
-  }
+  val maxI1AtMaxResponseUVCoords: (Double, Double) =
+    i1AtMaxResponseInterp.maxUV
   
+  //--------------------------------------------------------------------------
+  // find the poke location (U, V) in grid coordinates.  there is no poke 
+  //  location for control trials and girthline trials.  U is a column-linked
+  //  variable, V is a row-linked variable.
+  // find the poke location in st parametric coordinates.  there is no
+  //  poke location for control trials and girthline trials
+  val pokeLocation: Option[(Double, Double)] = {
+    if (in.site == "Control" || in.site == "Girthline") {
+      None
+    } else {
+      val mesh = markerGrid.diceToTrimesh(refSample)
+      val (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(refSample))
+      Some(st)
+    }
+  }
+    
+  //--------------------------------------------------------------------------
+  // compute the Biot strain grid for this trial
+  val biot2d: Grid[Mat2] = markerGrid.biot2D(refSample, maxResponseSample)
+  
+  //--------------------------------------------------------------------------
+  // compute the I1 grid for this trial
+  val i1Grid: Grid[Double] = 
+    markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+
 }
 
 

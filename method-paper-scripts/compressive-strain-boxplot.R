@@ -24,8 +24,8 @@ print(summary(anv))
 print(TukeyHSD(anv))
 # The data does not look very Normal (most groups are quite skewed), so we'll
 #  also do a Kruskal-Wallis ANOVA and a Wilcoxon rank sum test
-kruskal.test(csvdata)
-pairwise.wilcox.test(csvdata$Strain, csvdata$Trial)
+print(kruskal.test(csvdata))
+print(pairwise.wilcox.test(csvdata$Strain, csvdata$Trial))
 
 # Box plot
 q <- qplot(csvdata$Trial, csvdata$Strain, data = csvdata, geom="boxplot",
