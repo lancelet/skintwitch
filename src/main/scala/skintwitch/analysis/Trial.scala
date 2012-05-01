@@ -11,6 +11,7 @@ import skintwitch.Grid
 import skintwitch.Mat2
 import signal.Butter
 import signal.FiltFilt
+import skintwitch.Vec2
 import skintwitch.Vec3
 import skintwitch.Linearizable
 
@@ -37,49 +38,42 @@ case class Trial(
   import Trial._
   
   // a unique identifier string for this trial
-  val idString = "%s_trial%s" format (in.horse, in.trialNumber)
+  private val idString = "%s_trial%s" format (in.horse, in.trialNumber)
   
   // load and filter markers from the main trial
-  private def markers: Seq[Marker] = {
-    require(m_markers != null)
-    m_markers
-  }
-  private var m_markers = loadMarkers(in.inputFile).map(_.butter2(cutoffFreq))
+  private lazy val markers: Seq[Marker] = 
+    loadMarkers(in.inputFile).map(_.butter2(cutoffFreq))
   
   // create the marker grid
-  private def markerGrid: MarkerGrid = {
-    require(m_markerGrid != null)
-    m_markerGrid
-  }
-  private var m_markerGrid: MarkerGrid = MarkerGrid.fromCRMarkers(markers)
+  private lazy val markerGrid: MarkerGrid = MarkerGrid.fromCRMarkers(markers)
 
   // set number of samples in the trial and the sampling frequency (just
   //  fetch them from the first marker for the grid; they have to be the
   //  same for all markers)
-  val nSamples: Int = markerGrid(0, 0).co.length
-  val fs: Double = markerGrid(0, 0).fs
-  assert(markers.forall(m => m.co.length == nSamples && m.fs == fs))
+  private lazy val nSamples: Int = markerGrid(0, 0).co.length
+  private lazy val fs: Double = {
+    val fs0 = markerGrid(0, 0).fs
+    assert(markers.forall(m => m.co.length == nSamples && m.fs == fs0))
+    fs0
+  }
   
   // create the virtual marker for the pointer tip
-  private def pointer: Marker = {
-    require(m_pointer != null)
-    m_pointer
-  }
-  private var m_pointer = createPointerTipMarker(in.pointerFile, markers)
+  private lazy val pointer: Marker = 
+    createPointerTipMarker(in.pointerFile, markers)
 
   // distanceAnnotated is the distance from the pointer tip to the grid,
   //  and a second tuple element indicating whether the pointer at the
   //  computed distance lies "within" the grid
-  val distanceAnnotated: Seq[(Double, Boolean)] = {
-    def isWithinGrid(st: (Double, Double)): Boolean = {
+  private lazy val distanceAnnotated: Seq[(Double, Boolean)] = {
+    def isWithinGrid(st: Vec2): Boolean = {
       val minm = 0.01
       val maxm = 1 - minm
-      (st._1 > minm) && (st._1 < maxm) && (st._2 > minm) && (st._2 < maxm)
+      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
     }
     for {
       i <- 0 until nSamples
       mesh = markerGrid.diceToTrimesh(i)
-      (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(i))
+      (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
       inGrid = isWithinGrid(st)
     } yield (distance, inGrid)
   }
@@ -87,8 +81,8 @@ case class Trial(
   // the reference sample (just before the poke occurs).  for Control trials,
   //  the reference sample is 0, while for Girthline trials, the reference
   //  sample is specified by `start`.
-  val refSample: Int = refSampleOverride.getOrElse {
-    if (in.site == "Control") {
+  private lazy val refSample: Int = refSampleOverride.getOrElse {
+    val cRefSample = if (in.site == "Control") {
       // take sample 0 as the reference in a control trial
       0
     } else if (in.site == "Girthline") {
@@ -118,27 +112,30 @@ case class Trial(
         cand
       }
     }
+    assert(cRefSample >= 0 && cRefSample < nSamples)
+    cRefSample
   }
-  assert(refSample >= 0 && refSample < nSamples)
 
   // find the poke location in st parametric coordinates.  there is no
   //  poke location for control trials and girthline trials
-  val pokeLocation: Option[(Double, Double)] = {
+  private lazy val pokeLocation: Option[Vec2] = {
     if (in.site == "Control" || in.site == "Girthline") {
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(refSample))
+      val (distance, xPoint, st) = 
+        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
       Some(st)
     }
   }
   
   // find the poke location (row, col) in grid coordinates.  there is no poke 
   //  location for control trials and girthline trials.
-  val pokeGridLocation: Option[(Double, Double)] = {
+  private lazy val pokeGridLocation: Option[Vec2] = {
     if (pokeLocation.isDefined) {
-      val (s, t) = pokeLocation.get
-      Some(t * (markerGrid.numRows - 1), s * (markerGrid.numCols - 1))
+      val st = pokeLocation.get
+      Some(
+        Vec2(st.y * (markerGrid.numRows - 1), st.x * (markerGrid.numCols - 1)))
     } else {
       None
     }
@@ -146,12 +143,13 @@ case class Trial(
   
   // find the poke location in spatial (3D) coordinates.  there is no poke
   //  location for control trials and girthline trials
-  val pokeSpatialLocation: Option[Vec3] = {
+  private lazy val pokeSpatialLocation: Option[Vec3] = {
     if (in.site == "Control" || in.site == "Girthline") {
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(refSample))
+      val (distance, xPoint, st) = 
+        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
       Some(xPoint)
     }    
   }
@@ -159,14 +157,14 @@ case class Trial(
   // find the stroke path for a Girthline trial.  the path is a set of st
   //  parametric coordinates describing the path of the tip marker during the
   //  period it is in contact with the skin
-  val strokePath: Option[Seq[(Double, Double)]] = {
+  private lazy val strokePath: Option[Seq[Vec2]] = {
     if (in.site == "Girthline") {
       val start = in.start.get  // this must be defined for Girthline
       val end   = in.end.get    // this must be defined for Girthline
       val coords = for {
         i <- start until end
         mesh = markerGrid.diceToTrimesh(i)
-        (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(i))
+        (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
       } yield st
       Some(coords)
     } else {
@@ -177,7 +175,7 @@ case class Trial(
   // compute the grid average of the first invariant of the left Cauchy-Green 
   //  Deformation tensor at each time sample.  this is computed over all
   //  samples, but only the samples after the poke are relevant.
-  val i1: IndexedSeq[Double] = for {
+  private lazy val i1: IndexedSeq[Double] = for {
     i <- 0 until nSamples
   } yield markerGrid.avgLCauchyGreenI1(refSample, i)
   
@@ -190,11 +188,11 @@ case class Trial(
     val a = IndexedSeq(   1.0, sos.a1, sos.a2)
     FiltFilt.filtfilt(b, a, i1)
   }*/
-  val i1Filt: IndexedSeq[Double] = i1  // disable extra filtering for now
+  private lazy val i1Filt: IndexedSeq[Double] = i1  // disable extra filtering
   
   // compute the maximum response sample.  this is the first peak in the
   //  i1 values following the poke
-  val maxResponseSample: Int = {
+  private lazy val maxResponseSample: Int = {
     // i1dot is the finite difference of successive i1 values
     val i1dot = for {
       (x0, x1) <- i1Filt zip (i1Filt.tail)
@@ -205,7 +203,7 @@ case class Trial(
     val firstPositive = i1dot.indexWhere(_ > 0, refSample)
     // now find where i1dot becomes negative after firstPositive
     val maxCandidate = i1dot.indexWhere(_ < 0, firstPositive)
-    if (maxCandidate == -1) {
+    val mrs = if (maxCandidate == -1) {
       println("WARNING: Peak not found; setting maxResponseSample to end " +
       		"for trial %s, site %s." format(idString, in.site))
       println("         (This may not be a problem for Girthline trials.)")
@@ -213,38 +211,40 @@ case class Trial(
     } else {
       maxCandidate
     }
+    assert(mrs > refSample && mrs < nSamples) 
+    mrs
   }
-  assert(maxResponseSample > refSample && maxResponseSample < nSamples)
   
   // find the peak I1 value at the maximum response sample
-  val peakI1AtMaximumResponse: Double = {
+  private lazy val peakI1AtMaximumResponse: Double = {
     val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
     i1Grid.rowMajor.max
   }
   
   // find the marker (row, col) with the peak i1 value
-  val peakI1GridLocation: (Double, Double) = {
+  private lazy val peakI1GridLocation: Vec2 = {
     // first form a grid of i1 values at the maximum response, and find
     //  the maximum marker
     val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
     val (rowMax, colMax) = Averaging.maxCoords(i1Grid)
-    (rowMax, colMax)
+    Vec2(rowMax, colMax)
   }
   
   // find the spatial location of the marker with the peak i1 value
-  val peakI1SpatialLocation: Vec3 = {
-    val (rowMax, colMax) = peakI1GridLocation
+  private lazy val peakI1SpatialLocation: Vec3 = {
+    val rowMax = peakI1GridLocation.x
+    val colMax = peakI1GridLocation.y
     // now go back to the marker grid, and returns the coordinates of that
     //  marker at the maximum response
-    markerGrid(rowMax.toInt, colMax.toInt).co(maxResponseSample)
+    Vec3(markerGrid(rowMax.toInt, colMax.toInt).co(maxResponseSample))
   }
 
   // find the i1 value at the poke location at the maximum response
-  val i1AtPokeLocation: Option[Double] = {
+  private lazy val i1AtPokeLocation: Option[Double] = {
     if (pokeLocation.isDefined) {
-      val (s, t) = pokeLocation.get
+      val st = pokeLocation.get
       val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
-      Some(i1Grid.interpUV(s, t)(
+      Some(i1Grid.interpUV(st.x, st.y)(
           () => Linearizable.doubleMultiplyableToLinearizable[Double]))
     } else {
       None
@@ -253,7 +253,7 @@ case class Trial(
   
   // the distance from the poke location to the location of the maximum I1
   //  response
-  val distanceFromPokeToMaxI1: Option[Double] = {
+  private lazy val distanceFromPokeToMaxI1: Option[Double] = {
     if (pokeSpatialLocation.isDefined) {
       Some((peakI1SpatialLocation - pokeSpatialLocation.get).length)
     } else {
@@ -263,14 +263,60 @@ case class Trial(
   
   // compute the Biot strain tensor in 2D, at the maximum response sample,
   //  relative to the reference sample
-  val biot2d: Grid[Mat2] = markerGrid.biot2D(refSample, maxResponseSample)
+  private lazy val biot2d: Grid[Mat2] = 
+    markerGrid.biot2D(refSample, maxResponseSample)
 
-  // clean up things we don't reference outside (may need to make some of
-  //  these public later, in which case we can't get rid of them)
-  m_markers = null
-  m_markerGrid = null
-  m_pointer = null
+  // compute the I1 grid for this trial
+  private lazy val i1Grid: Grid[Double] = 
+    markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
+    
+  lazy val result: TrialResult = new TrialResult(
+    in,
+    idString,
+    nSamples,
+    fs,
+    distanceAnnotated,
+    refSample,
+    pokeLocation,
+    pokeGridLocation,
+    pokeSpatialLocation,
+    strokePath,
+    i1,
+    maxResponseSample,
+    peakI1AtMaximumResponse,
+    peakI1GridLocation,
+    peakI1SpatialLocation,
+    i1AtPokeLocation,
+    distanceFromPokeToMaxI1,
+    biot2d,
+    i1Grid
+  )
+
 }
+
+
+case class TrialResult(
+  in: TrialInput,
+  idString: String,
+  nSamples: Int,
+  fs: Double,
+  distanceAnnotated: Seq[(Double, Boolean)],
+  refSample: Int,
+  pokeLocation: Option[Vec2],
+  pokeGridLocation: Option[Vec2],
+  pokeSpatialLocation: Option[Vec3],
+  strokePath: Option[Seq[Vec2]],
+  i1: IndexedSeq[Double],
+  maxResponseSample: Int,
+  peakI1AtMaximumResponse: Double,
+  peakI1GridLocation: Vec2,
+  peakI1SpatialLocation: Vec3,
+  i1AtPokeLocation: Option[Double],
+  distanceFromPokeToMaxI1: Option[Double],
+  biot2d: Grid[Mat2],
+  i1Grid: Grid[Double]
+)
+
 
 object Trial {
   

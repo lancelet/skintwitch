@@ -224,16 +224,16 @@ object AqsisRender {
         for {
           r <- 0 until grid.numRows
           c <- 0 until grid.numCols
-          (x0, y0, z0) = grid(r, c).co(curFrame)
-          (x1, y1, z1) = grid(r, c).co(nextFrame)
+          r0 = grid(r, c).co(curFrame)
+          r1 = grid(r, c).co(nextFrame)
         } AttributeBlock {
           Surface("matteocclusion", 
                   "float Ko", 0.4,
                   "string ptCloudName", ptFileName(curFrame),
                   "float baking", if (pointCloud) 1 else 0)
           MotionBlock(Seq(0, 1)) {
-            Translate(x0, y0, z0)
-            Translate(x1, y1, z1)
+            Translate(r0.x, r0.y, r0.z)
+            Translate(r1.x, r1.y, r1.z)
           } // MotionBlock
           Scale(10, 10, 10)
           Sphere(1, -1, 1, 360)
@@ -244,11 +244,11 @@ object AqsisRender {
       if (renderOptions.renderSkinGrid) {
         val egrid0 = (grid.map { marker =>
           val co = marker.co(curFrame)
-          V3(co._1, co._2, co._3)
+          V3(co.x, co.y, co.z)
         }).expandEdgesByOne
         val egrid1 = (grid.map { marker =>
           val co = marker.co(nextFrame)
-          V3(co._1, co._2, co._3)
+          V3(co.x, co.y, co.z)
         }).expandEdgesByOne
         val p0 = egrid0.rowMajor.map(v => Seq(v.e0, v.e1, v.e2)).flatten
         val p1 = egrid1.rowMajor.map(v => Seq(v.e0, v.e1, v.e2)).flatten

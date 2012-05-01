@@ -27,9 +27,12 @@ class Analysis {
   // processing required, leaving us to query the Trial object for the plot
   // quantities we need.
   println("Loading trials")
-  val trials = (for (inTrial <- inTrials.par) yield {
+  val trials: Seq[TrialResult] = (for (inTrial <- inTrials.par) yield {
     val trial = try {
-      Trial(inTrial)
+      // this should create Trial as a temporary object; perform processing
+      //  and then dump the Trial, leaving only the TrialResult (making memory
+      //  use much less).
+      Trial(inTrial).result
     } catch { // THIS IS BAD: DO NOT CATCH ALL EXCEPTIONS INDISCRIMINATELY
       case e => {
         println("Exception loading trial %s" format inTrial.inputFile.getName)
@@ -101,13 +104,13 @@ class Analysis {
             ""
           }
           val (pokeX, pokeY) = if (trial.pokeGridLocation.isDefined) {
-            ("%f" format trial.pokeGridLocation.get._1,
-             "%f" format trial.pokeGridLocation.get._2)
+            ("%f" format trial.pokeGridLocation.get.x,
+             "%f" format trial.pokeGridLocation.get.y)
           } else { 
             ("", "") 
           }
-          val peakI1X = trial.peakI1GridLocation._1
-          val peakI1Y = trial.peakI1GridLocation._2
+          val peakI1X = trial.peakI1GridLocation.x
+          val peakI1Y = trial.peakI1GridLocation.y
           o.write("%s,%d,%s,%s,%f,%s,%s,%s,%f,%f\n" 
                   format (horse, num, site, distPokeI1, peakI1, pokeI1,
                           pokeX, pokeY, peakI1X, peakI1Y))
@@ -187,6 +190,65 @@ class Analysis {
                                 pokes.toIndexedSeq, strokePaths,
                                 renderContours)
   }
+  
+  //---------------------------------------------------------------------------
+  // Output average grids of I1, Biot strain and poke location lists for each
+  // test site, across all horses.  This is substantially the same code as
+  // appears in MethodPaperAnalysis.scala.
+  def saveAverageGrids() {
+    val sites = trials.map(_.in.site).toSet.toList.sorted
+    for {
+      site <- sites
+      trialsAtSite = trials.filter(_.in.site == site)
+    } {
+      val pokeLocs = trialsAtSite.map(_.pokeLocation)
+      val siteBiot2d = Averaging.mean(trialsAtSite.map(_.biot2d))
+      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid))
+      val outFile = new File(OutputMarshalling.getAverageGridsFileName(site))
+      val o = new FileWriter(outFile)
+      
+      // export I1 grid
+      o.write("I1 grid (7 rows, 8 columns)\n")
+      for {
+        row <- 0 until siteI1.numRows
+        col <- 0 until siteI1.numCols 
+      } {
+        o.write("%f" format siteI1(row, col))
+        o.write(if (col < siteI1.numCols - 1) ", " else "\n")
+      }
+      
+      // export Biot strain (E) grid
+      o.write("Biot strain (E) (7 rows, 8 columns) ")
+      o.write("(v1x, v1y, v2x, v2y, lambda1, lambda2) ")
+      o.write("where v1 and v1 are principal strains directions and ")
+      o.write("lambda are the magnitudes.\n")
+      for {
+        row <- 0 until siteBiot2d.numRows
+        col <- 0 until siteBiot2d.numCols
+      } {
+        val eigs = siteBiot2d(row, col).eig
+        assert(eigs.length == 2)
+        val l1 = eigs(0)._1
+        val l2 = eigs(1)._1
+        val v1 = eigs(0)._2
+        val v2 = eigs(1)._2
+        o.write("(%f;%f;%f;%f;%f;%f)" format (v1.x, v1.y, v2.x, v2.y, l1, l2))
+        o.write(if (col < siteBiot2d.numCols - 1) ", " else "\n")
+      }
+      
+      // export stimulus (poke) locations
+      o.write("Poke locations (u,v).  u is column-linked, v is row-linked.\n")
+      for (poke <- pokeLocs) {
+        if (poke.isDefined) {
+          o.write("%f, %f\n" format(poke.get.x, poke.get.y))
+        }
+      }
+            
+      o.close()
+    }
+  }
+  saveAverageGrids()
+  
   println("Done")
   
 }

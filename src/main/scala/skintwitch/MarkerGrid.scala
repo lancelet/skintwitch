@@ -21,8 +21,8 @@ trait MarkerGrid extends Grid[Marker] { self =>
         val adj = self.getFullAdjacent(row, col)
         val qu = adj.map(rc => self(rc._1, rc._2).co(s0)).map(Vec3(_))
         val qd = adj.map(rc => self(rc._1, rc._2).co(s)).map(Vec3(_))
-        TensorUtils.dgtensor(self(row, col).co(s0), qu,
-                             self(row, col).co(s), qd)
+        TensorUtils.dgtensor(Vec3(self(row, col).co(s0)), qu,
+                             Vec3(self(row, col).co(s)), qd)
       }
     }
   }
@@ -198,9 +198,9 @@ trait MarkerGrid extends Grid[Marker] { self =>
       col <- 0 until numCols
       s = col / (numCols - 1).toDouble
       t = row / (numRows - 1).toDouble
-    } yield (s, t)
+    } yield Vec2(s, t)
     // return the build mesh
-    new TriMesh(verts, faceBuilder.result, Some(texCoords))
+    new TriMesh(verts.map(Vec3(_)), faceBuilder.result, Some(texCoords))
   }
 
   /** Computes a vector in the parametric u direction (along increasing
@@ -250,7 +250,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
       private def normal(row: Int, col: Int): Vec3 = {
         val adj = self.getFullAdjacent(row, col)
         val q = adj.map(rc => self(rc._1, rc._2).co(s0)).map(Vec3(_))
-        val p = self(row, col).co(s0)
+        val p = Vec3(self(row, col).co(s0))
         TensorUtils.calcNormal(p, q)
       }
     }

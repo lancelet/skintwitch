@@ -2,6 +2,7 @@ package skintwitch.methodpaper
 
 import scala.collection.immutable._
 import java.io.File
+import mocaputils.{Vec3 => MVec3}
 import mocaputils.GapFiller
 import mocaputils.Marker
 import mocaputils.TRCReader
@@ -12,6 +13,8 @@ import skintwitch.analysis.TrialInput
 import skintwitch.Grid
 import skintwitch.BicubicInterpGrid
 import skintwitch.Mat2
+import skintwitch.Vec2
+import skintwitch.Vec3
 
 
 /** Analysis of a single trial for the method paper. 
@@ -79,15 +82,15 @@ case class MethodPaperTrial(
   //  and a second tuple element indicating whether the pointer at the
   //  computed distance lies "within" the grid
   val distanceAnnotated: Seq[(Double, Boolean)] = {
-    def isWithinGrid(st: (Double, Double)): Boolean = {
+    def isWithinGrid(st: Vec2): Boolean = {
       val minm = 0.01
       val maxm = 1 - minm
-      (st._1 > minm) && (st._1 < maxm) && (st._2 > minm) && (st._2 < maxm)
+      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
     }
     for {
       i <- 0 until nSamples
       mesh = markerGrid.diceToTrimesh(i)
-      (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(i))
+      (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
       inGrid = isWithinGrid(st)
     } yield (distance, inGrid)
   }  
@@ -187,12 +190,13 @@ case class MethodPaperTrial(
   //  variable, V is a row-linked variable.
   // find the poke location in st parametric coordinates.  there is no
   //  poke location for control trials and girthline trials
-  val pokeLocation: Option[(Double, Double)] = {
+  val pokeLocation: Option[Vec2] = {
     if (in.site == "Control" || in.site == "Girthline") {
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = mesh.signedDistanceTo(pointer.co(refSample))
+      val (distance, xPoint, st) = 
+        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
       Some(st)
     }
   }
@@ -249,7 +253,7 @@ object MethodPaperTrial {
     def s(name: String) = pStatic.find(_.name == name).get.co(nRefSample)
     
     // reference markers (static, dynamic)
-    val refMarkers: Seq[Tuple2[(Double, Double, Double), Marker]] = {
+    val refMarkers: Seq[Tuple2[MVec3, Marker]] = {
       def d(name: String) = trialMarkers.find(_.name == name).get
       def sd(name: String) = (s(name), d(name))
       Seq("middle", "long", "med", "short").map(sd)

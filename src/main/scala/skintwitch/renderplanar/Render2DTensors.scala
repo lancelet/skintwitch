@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage
 import java.awt.geom.Rectangle2D
 import mocaputils.plotting.PlotToPDF
 import java.io.File
+import skintwitch.Vec2
 import skintwitch.Mat2
 import java.awt.geom.Ellipse2D
 import skintwitch.analysis.Averaging
@@ -27,8 +28,8 @@ class Render2DTensors  // blah!  apparently Eclipse needs this
  *  }}}
  */
 case class Render2DTensorsChart(grids: Seq[Grid[Mat2]],
-                                stPokes: Seq[Option[(Double, Double)]],
-                                stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                                stPokes: Seq[Option[Vec2]],
+                                stStrokes: Option[Seq[Seq[Vec2]]],
                                 renderContours: Boolean,
                                 scale: Double = 100) 
 {
@@ -53,8 +54,8 @@ object Render2DTensors {
    *  @param ySpacing grid spacing in the y-direction
    *  @param scale scale of the tensors (tensor to PDF) */
   def renderToPDF(fileName: String, grids: Seq[Grid[Mat2]],
-                  stPokes: Seq[Option[(Double, Double)]],
-                  stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                  stPokes: Seq[Option[Vec2]],
+                  stStrokes: Option[Seq[Seq[Vec2]]],
                   renderContours: Boolean,
                   xSpacing: Int = 10, ySpacing: Int = 10,
                   scale: Double = 100)
@@ -75,8 +76,8 @@ object Render2DTensors {
    *  @param ySpacing spacing of the grid points in the y (v) direction
    *  @param scale scale of the tensors (tensor to pixel) */
   def renderToBufferedImage(grids: Seq[Grid[Mat2]], 
-                            stPokes: Seq[Option[(Double, Double)]],
-                            stStrokes: Option[Seq[Seq[(Double, Double)]]],
+                            stPokes: Seq[Option[Vec2]],
+                            stStrokes: Option[Seq[Seq[Vec2]]],
                             renderContours: Boolean,
                             xSpacing: Int = 50, ySpacing: Int = 50,
                             scale: Double = 100): BufferedImage =
@@ -100,8 +101,8 @@ object Render2DTensors {
    *  @param stStrokes st parametric coordinates of stroke paths
    *  @param scale scale of the tensor */
   def render(g: Graphics2D, width: Double, height: Double, 
-             grids: Seq[Grid[Mat2]], stPokes: Seq[Option[(Double, Double)]],
-             stStrokes: Option[Seq[Seq[(Double, Double)]]],
+             grids: Seq[Grid[Mat2]], stPokes: Seq[Option[Vec2]],
+             stStrokes: Option[Seq[Seq[Vec2]]],
              renderContours: Boolean,
              scale: Double = 100) 
   {
@@ -119,8 +120,8 @@ object Render2DTensors {
     for (stPoke <- stPokes) {
       if(stPoke.isDefined) {
         // find poke coordinates
-        val pokeX = stPoke.get._1 * xSpacing * (mean.numCols - 1) + xSpacing
-        val pokeY = stPoke.get._2 * ySpacing * (mean.numRows - 1) + ySpacing
+        val pokeX = stPoke.get.x * xSpacing * (mean.numCols - 1) + xSpacing
+        val pokeY = stPoke.get.y * ySpacing * (mean.numRows - 1) + ySpacing
         // plot poke location
         val pokeCircleDiam = xSpacing / 6
         g.setColor(new Color(0.2f, 0.2f, 0.2f, 0.4f))
@@ -134,9 +135,9 @@ object Render2DTensors {
     if (stStrokes.isDefined) {
       for (stStroke <- stStrokes.get) {
         // transform coordinates
-        val coords = stStroke.map((st: (Double, Double)) => {
-          val x = st._1 * xSpacing * (mean.numCols - 1) + xSpacing
-          val y = st._2 * ySpacing * (mean.numRows - 1) + ySpacing
+        val coords = stStroke.map((st: Vec2) => {
+          val x = st.x * xSpacing * (mean.numCols - 1) + xSpacing
+          val y = st.y * ySpacing * (mean.numRows - 1) + ySpacing
           (x, y)
         })
         // create path

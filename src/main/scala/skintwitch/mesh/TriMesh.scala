@@ -2,10 +2,13 @@ package skintwitch.mesh
 
 import scala.collection.immutable._
 
+import skintwitch.Vec2
+import skintwitch.Vec3
+
 class TriMesh(
-  vertices: IndexedSeq[(Double, Double, Double)],
+  vertices: IndexedSeq[Vec3],
   faces: IndexedSeq[(Int, Int, Int)],
-  texCoords: Option[IndexedSeq[(Double, Double)]] = None)
+  texCoords: Option[IndexedSeq[Vec2]] = None)
 {
   // check face indices are within the allowed range and unique within a
   //  triangle
@@ -25,12 +28,12 @@ class TriMesh(
   
   /** A Tri belonging to a TriMesh. */
   private case class TriMeshTri(
-    a: (Double, Double, Double),
-    b: (Double, Double, Double),
-    c: (Double, Double, Double),
-    ast: (Double, Double),
-    bst: (Double, Double),
-    cst: (Double, Double)) extends Tri
+    a: Vec3,
+    b: Vec3,
+    c: Vec3,
+    ast: Vec2,
+    bst: Vec2,
+    cst: Vec2) extends Tri
   
   /** IndexedSeq of tris within this TriMesh. */
   val tris: IndexedSeq[Tri] = new IndexedSeq[Tri] {
@@ -41,7 +44,7 @@ class TriMesh(
         val txc = texCoords.get
         (txc(face._1), txc(face._2), txc(face._3))
       } else {
-        ((0.0, 0.0), (0.0, 0.0), (0.0, 0.0))
+        (Vec2.Zero, Vec2.Zero, Vec2.Zero)
       }
       TriMeshTri(vertices(face._1), vertices(face._2), vertices(face._3),
                  st._1, st._2, st._3)
@@ -60,8 +63,8 @@ class TriMesh(
    *  @return the shortest distance from the mesh to point `p`, the
    *    point on the mesh at which the shortest distance occurs, and the
    *    texture coordinates of the point */
-  def distanceTo(p: (Double, Double, Double)): 
-  (Double, (Double, Double, Double), (Double, Double)) = {
+  def distanceTo(p: Vec3): 
+  (Double, Vec3, Vec2) = {
     val closestPoints = for {
       tri <- tris.par
       (dist, xPoint) = tri.distanceTo(p)
@@ -82,8 +85,8 @@ class TriMesh(
    *  @return the shortest signed distance from the mesh to point `p`, the
    *    point on the mesh at which the shortest signed distance occurs, and
    *    the texture coordinates of the point */
-  def signedDistanceTo(p: (Double, Double, Double)):
-  (Double, (Double, Double, Double), (Double, Double)) = {
+  def signedDistanceTo(p: Vec3):
+  (Double, Vec3, Vec2) = {
     val closestPoints = for {
       tri <- tris.par
       (dist, xPoint) = tri.signedDistanceTo(p)

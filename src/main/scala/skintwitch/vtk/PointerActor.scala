@@ -4,6 +4,8 @@ import scala.collection.immutable._
 import mocaputils.Marker
 import mocaputils.VirtualMarker
 import skintwitch.MarkerGrid
+import skintwitch.Vec2
+import skintwitch.Vec3
 import vtk.vtkActor
 import vtk.vtkPoints
 import vtk.vtkPolyData
@@ -95,25 +97,25 @@ extends AnimatedActor {
     points.Reset
     for {
       m <- pointerMarkers
-      (x, y, z) = m.co(sample)
+      co = m.co(sample)
     } {
-      points.InsertNextPoint(x, y, z)
+      points.InsertNextPoint(co.x, co.y, co.z)
     }
     points.Modified
     
     // update the points for the distance actor
-    def ptIsInMesh(st: (Double, Double)): Boolean = {
+    def ptIsInMesh(st: Vec2): Boolean = {
       val minm = 1.0e-2
       val maxm = 1.0 - minm
-      (st._1 > minm) && (st._1 < maxm) && (st._2 > minm) && (st._2 < maxm)
+      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
     }
     distPoints.Reset
     val triMesh = grid.diceToTrimesh(sample)
-    val (dist, contactPt, st) = triMesh.signedDistanceTo(mTip.co(sample))
-    val (xtip, ytip, ztip) = mTip.co(sample)
-    val (xcon, ycon, zcon) = contactPt
-    distPoints.InsertNextPoint(xtip, ytip, ztip)
-    distPoints.InsertNextPoint(xcon, ycon, zcon)
+    val (dist, contactPt, st) = triMesh.signedDistanceTo(Vec3(mTip.co(sample)))
+    val tip = mTip.co(sample)
+    val con = contactPt
+    distPoints.InsertNextPoint(tip.x, tip.y, tip.z)
+    distPoints.InsertNextPoint(con.x, con.y, con.z)
     if (ptIsInMesh(st)) {
       if (dist < 0) {
         distActor.GetProperty.SetColor(1.0, 0.5, 0.5)

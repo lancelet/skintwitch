@@ -1,41 +1,41 @@
 package skintwitch.mesh
 
-import skintwitch.rman.V3
+import skintwitch.Vec2
+import skintwitch.Vec3
+//import skintwitch.rman.V3
 
 /** Triangular facet. 
  * 
  *  The outward-facing normal of the triangle is defined by the right-handed
  *  ordering of the vertices: a, b, c. */
 trait Tri {
-  import Tri._
   
   /** Vertex of the triangle. */
-  val a: (Double, Double, Double)
+  val a: Vec3
   /** Vertex of the triangle. */
-  val b: (Double, Double, Double)
+  val b: Vec3
   /** Vertex of the triangle. */
-  val c: (Double, Double, Double)
+  val c: Vec3
   /** Texture coordinates at `a`. */
-  val ast: (Double, Double)
+  val ast: Vec2
   /** Texture coordinates at `b`. */
-  val bst: (Double, Double)
+  val bst: Vec2
   /** Texture coordinates at `c`. */
-  val cst: (Double, Double)
+  val cst: Vec2
 
-  private lazy val abxac: V3 = (b - a) x (c - a)
-  private lazy val n: V3 = abxac.normalized
+  private lazy val abxac: Vec3 = (b - a) cross (c - a)
+  private lazy val n: Vec3 = abxac.n
   
   /** Normal of the triangle. */
-  lazy val normal: (Double, Double, Double) = (n.e0, n.e1, n.e2)
+  lazy val normal: Vec3 = n
   
   /** Projects a point into the plane defined by the triangle.
    * 
    *  @param p point to project
    *  @return projected point */
-  def projectInto(p: (Double, Double, Double)): (Double, Double, Double) = {
+  def projectInto(p: Vec3): Vec3 = {
     val ap = p - a
-    val pp = a + ap - n * (ap dot n)
-    (pp.e0, pp.e1, pp.e2)
+    a + ap - n * (ap dot n)
   }
   
   /** Projects a point into the plane defined by the triangle and computes
@@ -49,20 +49,19 @@ trait Tri {
    *    the plane of the triangle
    *  @return barycentric coordinates of `p` */
   def projectIntoBarycentric(
-      p: (Double, Double, Double),
+      p: Vec3,
       pAlreadyProjected: Boolean = false
-  ): 
-    (Double, Double, Double) = 
+  ): Vec3 = 
   {
-    val pp = implicitly[V3](if (pAlreadyProjected) p else projectInto(p))
-    val a1 = (((c - b) x (pp - b)) dot n) * 0.5
-    val a2 = (((a - c) x (pp - c)) dot n) * 0.5
-    val a3 = (((b - a) x (pp - a)) dot n) * 0.5
+    val pp = implicitly[Vec3](if (pAlreadyProjected) p else projectInto(p))
+    val a1 = (((c - b) cross (pp - b)) dot n) * 0.5
+    val a2 = (((a - c) cross (pp - c)) dot n) * 0.5
+    val a3 = (((b - a) cross (pp - a)) dot n) * 0.5
     val aTot = a1 + a2 + a3
     val l1 = a1 / aTot
     val l2 = a2 / aTot
     val l3 = a3 / aTot
-    (l1, l2, l3)
+    Vec3(l1, l2, l3)
   }
   
   /** Computes the "signed distance" between a point and the triangle.
@@ -71,8 +70,8 @@ trait Tri {
    *  distance is positive if it lies on the outward-facing side of the
    *  triangle, and negative if it lies on the inward-facing side.
    */
-  def signedDistanceTo(p: (Double, Double, Double)):
-  (Double, (Double, Double, Double)) = {
+  def signedDistanceTo(p: Vec3):
+  (Double, Vec3) = {
     val (udist, pContact) = distanceTo(p)
     val sign = math.signum((p - pContact) dot normal)
     (sign * udist, pContact)
@@ -84,11 +83,11 @@ trait Tri {
    *  
    *  @param p point in the plane of the triangle
    *  @return texture coordinates `(s, t)` of the point */
-  def texCoordsOfPoint(p: (Double, Double, Double)): (Double, Double) = {
-    val bary = implicitly[V3](projectIntoBarycentric(p, true))
-    val svec = V3(ast._1, bst._1, cst._1)
-    val tvec = V3(ast._2, bst._2, cst._2)
-    (bary dot svec, bary dot tvec)
+  def texCoordsOfPoint(p: Vec3): Vec2 = {
+    val bary = projectIntoBarycentric(p, true)
+    val svec = Vec3(ast.x, bst.x, cst.x)
+    val tvec = Vec3(ast.y, bst.y, cst.y)
+    Vec2(bary dot svec, bary dot tvec)
   }
   
   /** Computes the shortest distance between a point and the triangle.
@@ -96,29 +95,29 @@ trait Tri {
    *  @param p point for which to find the shortest distance
    *  @return shortest distance between the triangle and `p`, and the
    *    point at which the shortest distance was found */
-  def distanceTo(p: (Double, Double, Double)): 
-  (Double, (Double, Double, Double)) = {
+  def distanceTo(p: Vec3): 
+  (Double, Vec3) = {
     val pp = projectInto(p)
     val bary = projectIntoBarycentric(p, true)
-    if (bary._1 >= 0.0 && bary._1 <= 1.0 &&
-        bary._2 >= 0.0 && bary._2 <= 1.0 &&
-        bary._3 >= 0.0 && bary._3 <= 1.0) { // inside the triangle
+    if (bary.x >= 0.0 && bary.x <= 1.0 &&
+        bary.y >= 0.0 && bary.y <= 1.0 &&
+        bary.z >= 0.0 && bary.z <= 1.0) { // inside the triangle
       ((pp - p).length, pp)
-    } else if (bary._2 < 0 && bary._3 < 0) { // definitely closest to vertex a
+    } else if (bary.y < 0 && bary.z < 0) { // definitely closest to vertex a
       ((a - p).length, a)
-    } else if (bary._1 < 0 && bary._3 < 0) { // definitely closest to vertex b
+    } else if (bary.x < 0 && bary.z < 0) { // definitely closest to vertex b
       ((b - p).length, b)
-    } else if (bary._1 < 0 && bary._2 < 0) { // definitely closest to vertex c
+    } else if (bary.x < 0 && bary.y < 0) { // definitely closest to vertex c
       ((c - p).length, c)
     } else {
       // here, we may be closest to either an edge or a vertex, so find
       //  the closest edge and use the distanceToEdge() method
-      val (ea, eb) = if (bary._3 < 0) {
+      val (ea, eb) = if (bary.z < 0) {
         (a, b)
-      } else if (bary._2 < 0) {
+      } else if (bary.y < 0) {
         (a, c)
       } else {
-        assert(bary._1 < 0)
+        assert(bary.x < 0)
         (c, b)
       }
       distanceToEdge(ea, eb, p)
@@ -132,10 +131,10 @@ trait Tri {
    *  @param p point for which to find the distance
    *  @return shortest distance between `ea -> eb` and `p`, and the
    *    point on the edge at which the shortest distance occurs */
-  private def distanceToEdge(ea: (Double, Double, Double),
-                             eb: (Double, Double, Double),
-                             p: (Double, Double, Double)): 
-  (Double, (Double, Double, Double)) = 
+  private def distanceToEdge(ea: Vec3,
+                             eb: Vec3,
+                             p: Vec3): 
+  (Double, Vec3) = 
   {
     val eaeb = eb - ea
     val q = (eaeb dot (p - ea)) / eaeb.length2
@@ -146,8 +145,3 @@ trait Tri {
   
 }
 
-object Tri {
-  implicit def tupleToV3(x: (Double, Double, Double)): V3 = 
-    V3(x._1, x._2, x._3)
-  implicit def V3ToTuple(v: V3): (Double, Double, Double) = (v.e0, v.e1, v.e2)
-}

@@ -59,10 +59,10 @@ extends AnimatedActor {
     for {
       r <- 0 until grid.numRows
       c <- 0 until grid.numCols
-      (x, y, z) = grid(r, c).co(sample)
+      co = grid(r, c).co(sample)
       m = bg(r, c)
     } {
-      points.InsertNextPoint(x, y, z)
+      points.InsertNextPoint(co.x, co.y, co.z)
       tensorArrayBuilder += (
         m.e11, m.e12, m.e13,
         m.e21, m.e22, m.e23,

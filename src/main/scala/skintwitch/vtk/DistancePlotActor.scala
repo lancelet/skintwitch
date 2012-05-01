@@ -6,6 +6,8 @@ import vtk.vtkActor2D
 import vtk.vtkXYPlotActor
 import vtk.vtkDoubleArray
 import mocaputils.Marker
+import skintwitch.Vec2
+import skintwitch.Vec3
 import skintwitch.MarkerGrid
 import mocaputils.VirtualMarker
 import vtk.vtkFieldData
@@ -65,17 +67,17 @@ class DistancePlotActor(
         (pLong, mLong), (pMiddle, mMiddle), (pShort, mShort), (pMed, mMed)))
     }
     
-    def inGrid(st: (Double, Double)): Boolean = { 
+    def inGrid(st: Vec2): Boolean = { 
       val minm = 0.01
       val maxm = 1.0 - minm
-      (st._1 > minm) && (st._1 < maxm) && (st._2 > minm) && (st._2 < maxm)
+      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
     }
     
     // find distance to the mesh at each time index
     for {
       i <- 0 until markers(0).co.length
       triMesh = grid.diceToTrimesh(i)
-      (dist, xPoint, st) = triMesh.signedDistanceTo(mTip.co(i))
+      (dist, xPoint, st) = triMesh.signedDistanceTo(Vec3(mTip.co(i)))
     } yield (dist, inGrid(st))
   }
   private var distances: Seq[(Double, Boolean)] = Seq.empty[(Double, Boolean)]

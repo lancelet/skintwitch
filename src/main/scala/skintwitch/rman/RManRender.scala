@@ -77,10 +77,10 @@ object RManRender {
           for {
             r <- 0 until grid.numRows
             c <- 0 until grid.numCols
-            (x, y, z) = grid(r, c).co(frame)
+            val co = grid(r, c).co(frame)
           } AttributeBlock {
             Surface("matte")
-            Translate(x, y, z)
+            Translate(co.x, co.y, co.z)
             Scale(10, 10, 10)
             Sphere(1, -1, 1, 360)
           }
@@ -88,7 +88,7 @@ object RManRender {
           // expand grid, so that edges are linearly interpolated outward
           val v3grid = grid.map { m =>
             val co = m.co(frame)
-            V3(co._1, co._2, co._3)
+            V3(co.x, co.y, co.z)
           }
           val egrid = v3grid.expandEdgesByOne
           

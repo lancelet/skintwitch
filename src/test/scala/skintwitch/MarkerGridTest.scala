@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import scala.collection.immutable._
 import mocaputils.Marker
+import mocaputils.{Vec3 => MVec3}
 
 class MarkerGridTest extends FunSuite with ShouldMatchers {
 
@@ -12,7 +13,7 @@ class MarkerGridTest extends FunSuite with ShouldMatchers {
     // make a dummy marker with an appropriate row, column name
     def makeMarker(row: Int, col: Int) = new Marker {
       val name = "C%dR%d" format (col, row)
-      val co = IndexedSeq.empty[(Double, Double, Double)]
+      val co = IndexedSeq.empty[MVec3]
       val fs = 1.0
     }
     // create the marker seq

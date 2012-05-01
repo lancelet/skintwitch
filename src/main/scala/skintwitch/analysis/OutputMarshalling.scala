@@ -7,7 +7,7 @@ object OutputMarshalling {
   val plotDir = "./output/plots"
   val csvDir = "./output/csv"
     
-  def getMaxResponsePlotFileName(trial: Trial): String = {
+  def getMaxResponsePlotFileName(trial: TrialResult): String = {
     "%s/%s-maxresponse.pdf" format (plotDir, trial.idString)
   }
 
@@ -20,16 +20,20 @@ object OutputMarshalling {
     "%s/avg-across-horses-%s.pdf" format (plotDir, site)
   }
   
-  def getDistancePlotFileName(trial: Trial): String = {
+  def getDistancePlotFileName(trial: TrialResult): String = {
     "%s/%s-distance.pdf" format (plotDir, trial.idString)
   }
   
-  def getI1PlotFileName(trial: Trial): String = {
+  def getI1PlotFileName(trial: TrialResult): String = {
     "%s/%s-i1.pdf" format (plotDir, trial.idString)
   }
   
   def getPokeParametersFileName(): String = {
     "%s/poke-parameters.csv" format (csvDir)
+  }
+  
+  def getAverageGridsFileName(site: String): String = {
+    "%s/avg-grid-%s.csv" format (plotDir, site)
   }
   
 }

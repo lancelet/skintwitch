@@ -153,7 +153,7 @@ object MethodPaperAnalysis extends App {
       o.write("Poke locations (u,v).  u is column-linked, v is row-linked.\n")
       for (poke <- pokeLocs) {
         if (poke.isDefined) {
-          o.write("%f, %f\n" format(poke.get._1, poke.get._2))
+          o.write("%f, %f\n" format(poke.get.x, poke.get.y))
         }
       }
       

@@ -1,6 +1,7 @@
 package skintwitch.analysis
 
 import scala.collection.immutable._
+import skintwitch.Vec2
 import skintwitch.Mat2
 import skintwitch.Grid
 
@@ -8,15 +9,10 @@ class Averaging
 
 object Averaging {
 
-  def mean(points: Seq[(Double, Double)]): (Double, Double) = {
-    val (x, y) = 
-      points.reduce((pta: (Double, Double), ptb: (Double, Double)) => {
-        (pta._1 + ptb._1, pta._2 + ptb._2)
-      })
-    (x / points.length.toDouble, y / points.length.toDouble)
-  }
+  def mean(points: Seq[Vec2]): Vec2 =
+    points.reduce((pta: Vec2, ptb: Vec2) => pta + ptb) / points.length.toDouble
   
-  def mean(points: Seq[Option[(Double, Double)]]): Option[(Double, Double)] = {
+  def mean(points: Seq[Option[Vec2]]): Option[Vec2] = {
     val defPts = points.filter(_.isDefined).map(_.get)
     if (defPts.length > 0) {
       Some(mean(defPts))

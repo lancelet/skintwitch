@@ -2,8 +2,9 @@ package skintwitch
 
 import math.sqrt
 import org.ejml.simple.SimpleMatrix
+import mocaputils.{Vec3 => MVec3}
 
-case class Vec3(x: Double, y: Double, z: Double) {
+final case class Vec3(x: Double, y: Double, z: Double) {
   def +(o: Vec3) = Vec3(x + o.x, y + o.y, z + o.z)
   def -(o: Vec3) = Vec3(x - o.x, y - o.y, z - o.z)
   def /(c: Double) = Vec3(x / c, y / c, z / c)
@@ -24,6 +25,7 @@ object Vec3 {
   implicit def tupleToVec3(t: (Double, Double, Double)): Vec3 =
     Vec3(t._1, t._2, t._3)
   def apply(t: (Double, Double, Double)): Vec3 = Vec3(t._1, t._2, t._3)
+  def apply(v: MVec3): Vec3 = Vec3(v.x, v.y, v.z)
   def approxEq(a: Vec3, b: Vec3, eps: Double = 1.0e-8): Boolean = {
     def approxEq(a: Double, b: Double, eps: Double) =
       (a + eps > b) && (a - eps < b)
@@ -35,4 +37,5 @@ object Vec3 {
     assert(m.getNumElements == 3)
     Vec3(m.get(0), m.get(1), m.get(2))
   }
+  val Zero = Vec3(0, 0, 0)
 }

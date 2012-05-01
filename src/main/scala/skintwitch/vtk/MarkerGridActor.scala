@@ -43,8 +43,8 @@ class MarkerGridActor(grid: MarkerGrid) extends AnimatedActor {
     for {
       r <- 0 until grid.numRows
       c <- 0 until grid.numCols
-      (x, y, z) = grid(r, c).co(sample)
-    } points.InsertNextPoint(x, y, z)
+      co = grid(r, c).co(sample)
+    } points.InsertNextPoint(co.x, co.y, co.z)
     points.Modified
   }
 

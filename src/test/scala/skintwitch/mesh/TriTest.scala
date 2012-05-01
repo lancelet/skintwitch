@@ -3,69 +3,72 @@ package skintwitch.mesh
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 
+import skintwitch.Vec2
+import skintwitch.Vec3
+
 class TriTest extends FunSuite with ShouldMatchers {
 
   test("normal") {
     val tri = new Tri {
-      val a = (0.0, 0.0, 0.0)
-      val b = (0.0, 0.0, 1.0)
-      val c = (1.0, 0.0, 0.0)
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 0.0)
-      val cst = (0.0, 0.0)
+      val a = Vec3(0.0, 0.0, 0.0)
+      val b = Vec3(0.0, 0.0, 1.0)
+      val c = Vec3(1.0, 0.0, 0.0)
+      val ast = Vec2.Zero
+      val bst = Vec2.Zero
+      val cst = Vec2.Zero
     }
     val n = tri.normal
-    n._1 should be (0.0 plusOrMinus 1e-10)
-    n._2 should be (1.0 plusOrMinus 1e-10)
-    n._3 should be (0.0 plusOrMinus 1e-10)
+    n.x should be (0.0 plusOrMinus 1e-10)
+    n.y should be (1.0 plusOrMinus 1e-10)
+    n.z should be (0.0 plusOrMinus 1e-10)
   }
   
   test("projectInto") {
     val tri = new Tri {
-      val a = (0.0, 0.0, 0.0)
-      val b = (0.0, 0.0, 1.0)
-      val c = (1.0, 0.0, 0.0)      
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 0.0)
-      val cst = (0.0, 0.0)
+      val a = Vec3(0.0, 0.0, 0.0)
+      val b = Vec3(0.0, 0.0, 1.0)
+      val c = Vec3(1.0, 0.0, 0.0)      
+      val ast = Vec2.Zero
+      val bst = Vec2.Zero
+      val cst = Vec2.Zero
     }
     val p = tri.projectInto((0.5, 50.0, 0.3))
-    p._1 should be (0.5 plusOrMinus 1e-10)
-    p._2 should be (0.0 plusOrMinus 1e-10)
-    p._3 should be (0.3 plusOrMinus 1e-10)
+    p.x should be (0.5 plusOrMinus 1e-10)
+    p.y should be (0.0 plusOrMinus 1e-10)
+    p.z should be (0.3 plusOrMinus 1e-10)
   }
 
   test("projectIntoBarycentric") {
     val tri = new Tri {
-      val a = (0.0, 0.0, 0.0)
-      val b = (0.0, 0.0, 1.0)
-      val c = (1.0, 0.0, 0.0)      
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 0.0)
-      val cst = (0.0, 0.0)
+      val a = Vec3(0.0, 0.0, 0.0)
+      val b = Vec3(0.0, 0.0, 1.0)
+      val c = Vec3(1.0, 0.0, 0.0)      
+      val ast = Vec2.Zero
+      val bst = Vec2.Zero
+      val cst = Vec2.Zero
     }
     val b = tri.projectIntoBarycentric((0.0, 5.0, 0.0))
-    b._1 should be (1.0 plusOrMinus 1e-10)
-    b._2 should be (0.0 plusOrMinus 1e-10)
-    b._3 should be (0.0 plusOrMinus 1e-10)
+    b.x should be (1.0 plusOrMinus 1e-10)
+    b.y should be (0.0 plusOrMinus 1e-10)
+    b.z should be (0.0 plusOrMinus 1e-10)
     val c = tri.projectIntoBarycentric((0.5, 5.0, 0.5))
-    c._1 should be (0.0 plusOrMinus 1e-10)
-    c._2 should be (0.5 plusOrMinus 1e-10)
-    c._3 should be (0.5 plusOrMinus 1e-10)
+    c.x should be (0.0 plusOrMinus 1e-10)
+    c.y should be (0.5 plusOrMinus 1e-10)
+    c.z should be (0.5 plusOrMinus 1e-10)
     val d = tri.projectIntoBarycentric((1.0, -10.0, 1.0))
-    d._1 should be (-1.0 plusOrMinus 1e-10)
-    d._2 should be (1.0 plusOrMinus 1e-10)
-    d._3 should be (1.0 plusOrMinus 1e-10)
+    d.x should be (-1.0 plusOrMinus 1e-10)
+    d.y should be (1.0 plusOrMinus 1e-10)
+    d.z should be (1.0 plusOrMinus 1e-10)
   }
   
   test("distanceTo") {
     val tri = new Tri {
-      val a = (-1.0, -1.0, 0.0)
-      val b = ( 1.0, -1.0, 0.0)
-      val c = (-1.0,  1.0, 0.0)
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 0.0)
-      val cst = (0.0, 0.0)      
+      val a = Vec3(-1.0, -1.0, 0.0)
+      val b = Vec3( 1.0, -1.0, 0.0)
+      val c = Vec3(-1.0,  1.0, 0.0)
+      val ast = Vec2.Zero
+      val bst = Vec2.Zero
+      val cst = Vec2.Zero      
     }
     val (a, pta) = tri.distanceTo((-0.453, -0.472, 1.0))
     val (b, ptb) = tri.distanceTo((0.0, -2.0, 1.0))
@@ -79,12 +82,12 @@ class TriTest extends FunSuite with ShouldMatchers {
 
   test("signedDistanceTo") {
     val tri = new Tri {
-      val a = (-1.0, -1.0, 0.0)
-      val b = ( 1.0, -1.0, 0.0)
-      val c = (-1.0,  1.0, 0.0)
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 0.0)
-      val cst = (0.0, 0.0)      
+      val a = Vec3(-1.0, -1.0, 0.0)
+      val b = Vec3( 1.0, -1.0, 0.0)
+      val c = Vec3(-1.0,  1.0, 0.0)
+      val ast = Vec2.Zero
+      val bst = Vec2.Zero
+      val cst = Vec2.Zero      
     }
     val (a, pta) = tri.signedDistanceTo((-0.453, -0.472, 1.0))
     val (b, ptb) = tri.signedDistanceTo((0.0, -2.0, 1.0))
@@ -98,16 +101,16 @@ class TriTest extends FunSuite with ShouldMatchers {
   
   test("texCoordsOfPoint") {
     val tri = new Tri {
-      val a = (0.0, 0.0, 0.0)
-      val b = (1.0, 0.0, 0.0)
-      val c = (0.0, 1.0, 0.0)
-      val ast = (0.0, 0.0)
-      val bst = (0.0, 1.0)
-      val cst = (1.0, 0.0)
+      val a = Vec3(0.0, 0.0, 0.0)
+      val b = Vec3(1.0, 0.0, 0.0)
+      val c = Vec3(0.0, 1.0, 0.0)
+      val ast = Vec2(0.0, 0.0)
+      val bst = Vec2(0.0, 1.0)
+      val cst = Vec2(1.0, 0.0)
     }
-    val (s, t) = tri.texCoordsOfPoint((0.5, 0.5, 0.0))
-    s should be (0.5 plusOrMinus 1e-10)
-    t should be (0.5 plusOrMinus 1e-10)
+    val st = tri.texCoordsOfPoint((0.5, 0.5, 0.0))
+    st.x should be (0.5 plusOrMinus 1e-10)
+    st.y should be (0.5 plusOrMinus 1e-10)
   }
   
 }
