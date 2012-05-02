@@ -37,3 +37,5 @@ method-paper-output
 method-paper-scripts/.Rhistory
 method-paper-scripts/*.tex
 method-paper-scripts/*.svg
+method-paper-scripts/*.pyc
+result-paper-scripts/*.png

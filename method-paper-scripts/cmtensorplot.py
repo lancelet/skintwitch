@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 """
+Plotting for the method paper.
 Produces color map plots containing:
   - Color maps of I1 values (scalar field)
   - Quiver plots of Biot strain principal values (E) (2D tensor field)
@@ -8,10 +9,11 @@ Produces color map plots containing:
 import csv
 from numpy import array, linspace, meshgrid
 import matplotlib
-matplotlib.use('SVG')
-matplotlib.rcParams['svg.fonttype'] = 'none'
-matplotlib.rcParams['text.usetex'] = False
-matplotlib.rcParams['text.latex.unicode'] = False
+if __name__ == '__main__':
+  matplotlib.use('SVG')
+  matplotlib.rcParams['svg.fonttype'] = 'none'
+  matplotlib.rcParams['text.usetex'] = False
+  matplotlib.rcParams['text.latex.unicode'] = False
 from mpl_toolkits.axes_grid1 import AxesGrid
 from matplotlib.pyplot import colorbar, figure, gca, show, subplots, \
     xlim, ylim, subplot2grid, savefig
@@ -93,12 +95,12 @@ def load_avg_grid_file(file):
     return (i1Grid, eGrid, stimLoc)
 
 
-def plot_I1(i1Grid, axes, vmin=3.0, vmax=3.05):
+def plot_I1(i1Grid, axes, vmin=3.0, vmax=3.05, cmap='PuBuGn'):
     """
     Plots I1 values as a color map image on the given axis.
     """
     axes.imshow(i1Grid, interpolation='bicubic', extent=(0, 1, 1, 0),
-        cmap='PuBuGn', aspect=(7.0/8.0), vmin=vmin, vmax=vmax)
+        cmap=cmap, aspect=(7.0/8.0), vmin=vmin, vmax=vmax)
     interp_scale = 8
     Z = zoom(i1Grid, interp_scale)
     xi = linspace(0.0, 1.0, 8 * interp_scale)
@@ -108,13 +110,14 @@ def plot_I1(i1Grid, axes, vmin=3.0, vmax=3.05):
     axes.contour(X, Y, Z, levels, colors='k', alpha=0.2)
 
     
-def plot_pokes(stimLoc, axes):
+def plot_pokes(stimLoc, axes, radius=3.5):
     """
     Plots poke locations on a given axis.
     """
     xs = stimLoc[:,0]
     ys = stimLoc[:,1]
-    axes.scatter(xs, ys, marker='o', c=[0, 0, 0, 0.5], s=50, edgecolors='none')
+    s = 4.0 * radius * radius
+    axes.scatter(xs, ys, marker='o', c=[0, 0, 0, 0.5], s=s, edgecolors='none')
 
 def plot_e(eGrid, axes, scale=1.3, arrow_width=0.005, 
     color_compression=[0,0,0], color_tension=[0,0,0]):
