@@ -11,11 +11,11 @@ class MarkerGridTest extends FunSuite with ShouldMatchers {
   /** Makes a dummy marker sequence with appropriate rows and cols. */
   private def markerSeq(rows: Int, cols: Int): Seq[Marker] = {
     // make a dummy marker with an appropriate row, column name
-    def makeMarker(row: Int, col: Int) = new Marker {
-      val name = "C%dR%d" format (col, row)
-      val co = IndexedSeq.empty[MVec3]
-      val fs = 1.0
-    }
+    def makeMarker(row: Int, col: Int) = new Marker.Vec3Marker(
+      "C%dR%d" format (col, row),
+      1.0,
+      IndexedSeq.empty[MVec3]
+    )
     // create the marker seq
     for (r <- 0 until rows; c <- 0 until cols) yield makeMarker(r, c)
   }

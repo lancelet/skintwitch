@@ -14,7 +14,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
    *  @return new grid with computed deformation gradient tensor */
   def dgtensor(s0: Int, s: Int): Grid[Mat3] = {
     //println("Computing dgtensor: s0 = %d, s1 = %d" format (s0, s)) // TEMP
-    new Grid[Mat3]{
+    VGrid(new Grid[Mat3]{
       val numRows = self.numRows
       val numCols = self.numCols
       def apply(row: Int, col: Int) = {
@@ -24,7 +24,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
         TensorUtils.dgtensor(Vec3(self(row, col).co(s0)), qu,
                              Vec3(self(row, col).co(s)), qd)
       }
-    }
+    })
   }
   
   /** Computes the gradient (rate) of the deformation gradient tensor over
@@ -236,7 +236,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
     // first compute the 3D biot tensor grid
     val b3 = biot(s0, s)
     // now transform to 2D according using a new grid
-    val grid = new Grid[Mat2] {
+    VGrid(new Grid[Mat2] {
       val numRows = self.numRows
       val numCols = self.numCols
       def apply(row: Int, col: Int): Mat2 = {
@@ -253,9 +253,7 @@ trait MarkerGrid extends Grid[Marker] { self =>
         val p = Vec3(self(row, col).co(s0))
         TensorUtils.calcNormal(p, q)
       }
-    }
-    // convert to a VGrid to save referencing the marker grid
-    VGrid(grid)
+    })
   }
   
 }
