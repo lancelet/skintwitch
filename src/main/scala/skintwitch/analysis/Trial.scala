@@ -160,40 +160,44 @@ case class Trial(
       }
     }
   }
-    
-  // find the stroke path for a Girthline trial.  the path is a set of st
-  //  parametric coordinates describing the path of the tip marker during the
-  //  period it is in contact with the skin
+  
+  //--------------------------------------------------------------------------
+  // Stroke path for a Girthline trial.
+  //
+  // Instead of a single poke poink, a girthline trial has a path, which
+  // consists of the st coordinates (in B parametric space) of the end of the
+  // pointer/poker through time.  This path is the path of the tip marker
+  // during the period that it was in contact with the skin (from in.start to
+  // in.end).
   private lazy val strokePath: Option[Seq[Vec2]] = {
-    if (in.site == "Girthline") {
-      val start = in.start.get  // this must be defined for Girthline
-      val end   = in.end.get    // this must be defined for Girthline
-      val coords = for {
-        i <- start until end
-        mesh = markerGrid.diceToTrimesh(i)
-        meshDistance = mesh.distanceTo(Vec3(pointer.co(i)))
-      } yield meshDistance.st
-      Some(coords)
-    } else {
-      None
+    in.site match {
+      case "Girthline" => {
+        val start = in.start.get  // this must be defined for Girthline
+        val end   = in.end.get    // this must be defined for Girthline
+        val coords = for {
+          i <- start until end
+          mesh = markerGrid.diceToTrimesh(i)
+          meshDistance = mesh.distanceTo(Vec3(pointer.co(i)))
+        } yield meshDistance.st
+        Some(coords)
+      }
+      case _ => None
     }
   }
   
-  // compute the grid average of the first invariant of the left Cauchy-Green 
-  //  Deformation tensor at each time sample.  this is computed over all
-  //  samples, but only the samples after the poke are relevant.
-  private lazy val i1: IndexedSeq[Double] = for {
-    i <- 0 until nSamples
-  } yield markerGrid.avgLCauchyGreenI1(refSample, i)
-  
-  private lazy val i1Filt: IndexedSeq[Double] = i1  // disable extra filtering
+  //--------------------------------------------------------------------------
+  // Grid (spatial) average of the first invariant of the left Cauchy-Green
+  // deformaiton tensor at each time sample.
+  private lazy val i1Bar: IndexedSeq[Double] = 
+    for (i <- 0 until nSamples) yield 
+      markerGrid.avgLCauchyGreenI1(refSample, i)
   
   // compute the maximum response sample.  this is the first peak in the
   //  i1 values following the poke
   private lazy val maxResponseSample: Int = {
     // i1dot is the finite difference of successive i1 values
     val i1dot = for {
-      (x0, x1) <- i1Filt zip (i1Filt.tail)
+      (x0, x1) <- i1Bar zip (i1Bar.tail)
       delta = x1 - x0
     } yield delta
     // firstPositive is when i1dot first becomes positive after the reference
@@ -290,7 +294,7 @@ case class Trial(
     refSample,
     pokeMeshDistance,
     strokePath,
-    i1,
+    i1Bar,
     maxResponseSample,
     peakI1AtMaximumResponse,
     peakI1GridLocation,
@@ -314,7 +318,7 @@ case class TrialResult(
   refSample: Int,
   pokeMeshDistance: Option[MeshDistance],
   strokePath: Option[Seq[Vec2]],
-  i1: IndexedSeq[Double],
+  i1Bar: IndexedSeq[Double],
   maxResponseSample: Int,
   peakI1AtMaximumResponse: Double,
   peakI1GridLocation: Vec2,

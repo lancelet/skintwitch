@@ -20,15 +20,15 @@ object I1Plot {
   def plot(fileName: String, trial: TrialResult) {
     
     // create time series for the I1 value
-    val i1series = TimeSampledSeries("i1", trial.i1, trial.fs)
+    val i1series = TimeSampledSeries("i1", trial.i1Bar, trial.fs)
     // create dataset
     val dataset = new XYDataset with StaticDataset {
       val series = Vector(i1series)
     }
     
     // compute range for the y axis
-    val maxI1 = trial.i1.max
-    val minI1 = trial.i1.min
+    val maxI1 = trial.i1Bar.max
+    val minI1 = trial.i1Bar.min
     val yRange = maxI1 - minI1
     val padding = 0.1 * yRange
     val maxY = maxI1 + padding
