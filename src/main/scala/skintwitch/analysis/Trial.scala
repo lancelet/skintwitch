@@ -158,18 +158,6 @@ case class Trial(
       }
     }
   }
-    
-  // find the poke location (row, col) in grid coordinates.  there is no poke 
-  //  location for control trials and girthline trials.
-  private lazy val pokeGridLocation: Option[Vec2] = {
-    if (pokeB.isDefined) {
-      val st = pokeB.get
-      Some(
-        Vec2(st.y * (markerGrid.numRows - 1), st.x * (markerGrid.numCols - 1)))
-    } else {
-      None
-    }
-  }
   
   // find the poke location in spatial (3D) coordinates.  there is no poke
   //  location for control trials and girthline trials
@@ -311,7 +299,6 @@ case class Trial(
     distance,
     refSample,
     pokeB,
-    pokeGridLocation,
     pokeSpatialLocation,
     strokePath,
     i1,
@@ -337,7 +324,6 @@ case class TrialResult(
   distance: Seq[MeshDistance],
   refSample: Int,
   pokeB: Option[Vec2],
-  pokeGridLocation: Option[Vec2],
   pokeSpatialLocation: Option[Vec3],
   strokePath: Option[Seq[Vec2]],
   i1: IndexedSeq[Double],

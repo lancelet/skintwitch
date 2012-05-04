@@ -84,8 +84,8 @@ class Analysis {
       "Distance from poke to peak I1 at maximum response (mm)," +
       "Peak I1 value at maximum response (stretch squared)," +
       "I1 value at the poke location at maximum response (stretch squared)," +
-      "Poke X," +
-      "Poke Y," +
+      "Poke X (\\xi^1)," +
+      "Poke Y (\\xi^2)," +
       "Peak I1 X," +
       "Peak I1 Y\n")
     val byHorse = trials.groupBy(_.in.horse).toSeq.sortBy(_._1).map(_._2)
@@ -108,9 +108,9 @@ class Analysis {
           } else {
             ""
           }
-          val (pokeX, pokeY) = if (trial.pokeGridLocation.isDefined) {
-            ("%f" format trial.pokeGridLocation.get.x,
-             "%f" format trial.pokeGridLocation.get.y)
+          val (pokeX, pokeY) = if (trial.pokeB.isDefined) {
+            ("%f" format trial.pokeB.get.x,
+             "%f" format trial.pokeB.get.y)
           } else { 
             ("", "") 
           }
