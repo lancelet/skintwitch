@@ -39,3 +39,6 @@ method-paper-scripts/*.tex
 method-paper-scripts/*.svg
 method-paper-scripts/*.pyc
 result-paper-scripts/*.png
+result-paper-scripts/.Rhistory
+result-paper-scripts/*.svg
+result-paper-scripts/*.tex

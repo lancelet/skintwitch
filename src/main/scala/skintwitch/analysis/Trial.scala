@@ -11,6 +11,8 @@ import skintwitch.Grid
 import skintwitch.Mat2
 import signal.Butter
 import signal.FiltFilt
+import skintwitch.BicubicInterpGrid
+import skintwitch.Mat3
 import skintwitch.Vec2
 import skintwitch.Vec3
 import skintwitch.Linearizable
@@ -266,6 +268,19 @@ case class Trial(
   private lazy val biot2d: Grid[Mat2] = 
     markerGrid.biot2D(refSample, maxResponseSample)
 
+  // find the minimum principal strain (compressive) with the largest magnitude
+  //  at the maximum response sample.  here we interpolate a grid of biot2d
+  //  at 10x its original resolution.
+  private lazy val minPrinStrainAtMaxResponse: Double = {
+    val biotGrid: Grid[Mat3] = markerGrid.biot(refSample, maxResponseSample)
+    def minPS(m: Mat3): Double = m.eigSymm.map(_._1).min
+    val newRows = biot2d.numRows * 10
+    val newCols = biot2d.numCols * 10
+    val minPSGrid = BicubicInterpGrid(biotGrid.map(minPS)).
+        toGrid(newRows, newCols)
+    minPSGrid.rowMajor.min
+  }
+    
   // compute the I1 grid for this trial
   private lazy val i1Grid: Grid[Double] = 
     markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
@@ -289,6 +304,7 @@ case class Trial(
     i1AtPokeLocation,
     distanceFromPokeToMaxI1,
     biot2d,
+    minPrinStrainAtMaxResponse,
     i1Grid
   )
 
@@ -314,6 +330,7 @@ case class TrialResult(
   i1AtPokeLocation: Option[Double],
   distanceFromPokeToMaxI1: Option[Double],
   biot2d: Grid[Mat2],
+  minPrinStrainAtMaxResponse: Double,
   i1Grid: Grid[Double]
 )
 

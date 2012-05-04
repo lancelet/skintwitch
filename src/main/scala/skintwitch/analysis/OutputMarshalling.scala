@@ -1,11 +1,27 @@
 package skintwitch.analysis
 
+import java.io.File
+import scala.collection.immutable._
+
 class OutputMarshalling
 
 object OutputMarshalling {
 
   val plotDir = "./output/plots"
   val csvDir = "./output/csv"
+  
+  def verifyOrCreateOutputDirs() = {
+    val plotFileDir = new File(plotDir)
+    val csvFileDir = new File(csvDir)
+    val dirs: Seq[File] = Seq(plotFileDir, csvFileDir)
+    for (dir <- dirs) {
+      if (dir.exists) {
+        assert(dir.isDirectory)
+      } else {
+        dir.mkdirs()
+      }
+    }
+  }
     
   def getMaxResponsePlotFileName(trial: TrialResult): String = {
     "%s/%s-maxresponse.pdf" format (plotDir, trial.idString)
@@ -32,8 +48,12 @@ object OutputMarshalling {
     "%s/poke-parameters.csv" format (csvDir)
   }
   
+  def getMinPrinStrainsFileName(): String = {
+    "%s/min-prin-strains.csv" format (csvDir)
+  }
+  
   def getAverageGridsFileName(site: String): String = {
-    "%s/avg-grid-%s.csv" format (plotDir, site)
+    "%s/avg-grid-%s.csv" format (csvDir, site)
   }
   
 }

@@ -19,6 +19,11 @@ class Analysis {
   println("Using data directory: %s" format tlDir.getCanonicalPath)
   
   //--------------------------------------------------------------------------
+  // verify / create output directories
+  println("Verying / creating output directories")
+  OutputMarshalling.verifyOrCreateOutputDirs()
+  
+  //--------------------------------------------------------------------------
   // find input trials
   val inTrials = InputMarshalling.getTrials(tlDir)
   
@@ -190,6 +195,35 @@ class Analysis {
                                 pokes.toIndexedSeq, strokePaths,
                                 renderContours)
   }
+  
+  //---------------------------------------------------------------------------
+  // Output data for the minimum principal strain (compressive) at the point of
+  // maximum twitch response.  For each horse, we normalize the strains by
+  // dividing through by the average strain for each horse.
+  def saveMinPrinStrains() {
+    val outFile = new File(OutputMarshalling.getMinPrinStrainsFileName())
+    val o = new FileWriter(outFile)
+    
+    o.write("Trial, NStrain\n") // header line
+    
+    val horses = trials.map(_.in.horse).toSet.toList.sorted
+    val sites = trials.map(_.in.site).toSet.toList.sorted
+    for {
+      horse <- horses
+      trialsForHorse = trials.filter(_.in.horse == horse)
+      n = trialsForHorse.length.toDouble
+      averageStrain = trialsForHorse.map(_.minPrinStrainAtMaxResponse).sum / n
+      site <- sites
+      trialsForHorseAtSite = trialsForHorse.filter(_.in.site == site)
+      trial <- trialsForHorseAtSite
+    } {
+        val normalizedStrain = trial.minPrinStrainAtMaxResponse / averageStrain
+        o.write("%s, %f\n" format (trial.in.site, normalizedStrain))
+    }
+    
+    o.close()
+  }
+  saveMinPrinStrains()
   
   //---------------------------------------------------------------------------
   // Output average grids of I1, Biot strain and poke location lists for each
