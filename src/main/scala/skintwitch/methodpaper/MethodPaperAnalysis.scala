@@ -100,7 +100,7 @@ object MethodPaperAnalysis extends App {
     for (trial <- bySite) {
       val uv = trial.maxI1AtMaxResponseUVCoords
       val i_uv = trial.i1AtMaxResponseInterp.rowMajor.max - 3.0
-      o.write("%s, %f, %f, %f\n" format (trial.in.site, uv._2, uv._1, i_uv))
+      o.write("%s, %f, %f, %f\n" format (trial.in.site, uv.y, uv.x, i_uv))
     }
     o.close()
   }

@@ -174,7 +174,7 @@ case class MethodPaperTrial(
   // find the UV coordinates of the maximum I1 (first invariant of the Left
   //  Cauchy-Green deformation tensor). here we interpolate the grid at 10x
   //  its original resolution
-  val maxI1AtMaxResponseUVCoords: (Double, Double) =
+  val maxI1AtMaxResponseUVCoords: Vec2 =
     i1AtMaxResponseInterp.maxUV
   
   //--------------------------------------------------------------------------

@@ -1,7 +1,6 @@
 package skintwitch.mesh
 
-import skintwitch.Vec2
-import skintwitch.Vec3
+import skintwitch.{Vec2, Vec3, Mat3}
 //import skintwitch.rman.V3
 
 /** Triangular facet. 
@@ -11,17 +10,17 @@ import skintwitch.Vec3
 trait Tri {
   
   /** Vertex of the triangle. */
-  val a: Vec3
+  def a: Vec3
   /** Vertex of the triangle. */
-  val b: Vec3
+  def b: Vec3
   /** Vertex of the triangle. */
-  val c: Vec3
+  def c: Vec3
   /** Texture coordinates at `a`. */
-  val ast: Vec2
+  def ast: Vec2
   /** Texture coordinates at `b`. */
-  val bst: Vec2
+  def bst: Vec2
   /** Texture coordinates at `c`. */
-  val cst: Vec2
+  def cst: Vec2
 
   private lazy val abxac: Vec3 = (b - a) cross (c - a)
   private lazy val n: Vec3 = abxac.n
@@ -53,7 +52,7 @@ trait Tri {
       pAlreadyProjected: Boolean = false
   ): Vec3 = 
   {
-    val pp = implicitly[Vec3](if (pAlreadyProjected) p else projectInto(p))
+    val pp = if (pAlreadyProjected) p else projectInto(p)
     val a1 = (((c - b) cross (pp - b)) dot n) * 0.5
     val a2 = (((a - c) cross (pp - c)) dot n) * 0.5
     val a3 = (((b - a) cross (pp - a)) dot n) * 0.5
@@ -141,6 +140,30 @@ trait Tri {
     val qnorm = if (q < 0) 0 else if (q > 1) 1 else q
     val linePt = ea + eaeb * qnorm
     ((linePt - p).length, linePt)
+  }
+  
+  /** Convert texture coordinate to a point.  If the texture coordinates do
+    * not exist in the triangle then return None.
+    * 
+    * @param st texture coordinates
+    * @return optional point
+    */
+  def texCoordsToPoint(st: Vec2): Option[Vec3] = {
+    // first we solve the 3x3 system to compute the barycentric coordinates
+    //  from the texture coordinates
+    val S = Mat3(ast.x, bst.x, cst.x,
+                 ast.y, bst.y, cst.y,
+                     1,     1,     1)
+    val z = Vec3(st.x, st.y, 1)
+    val bary = S.inv * z  // barycentric coordinates
+    if (bary.x >= 0.0 && bary.x <= 1.0 &&
+        bary.y >= 0.0 && bary.y <= 1.0 &&
+        bary.z >= 0.0 && bary.z <= 1.0) 
+    { // if we're inside the triangle
+      Some(a * bary.x + b * bary.y + c * bary.z)
+    } else {
+      None
+    }
   }
   
 }

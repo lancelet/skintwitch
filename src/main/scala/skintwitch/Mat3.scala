@@ -68,6 +68,11 @@ case class Mat3(
         e31 * m.e12 + e32 * m.e22 + e33 * m.e32,
         e31 * m.e13 + e32 * m.e23 + e33 * m.e33)
   
+  def *(v: Vec3): Vec3 = Vec3(
+      e11 * v.x + e12 * v.y + e13 * v.z,
+      e21 * v.x + e22 * v.y + e23 * v.z,
+      e31 * v.x + e32 * v.y + e33 * v.z)
+  
   lazy val trace: Double = e11 + e22 + e33
         
   /** Polar decomposition: this = R * U, where R is a rotation matrix. */

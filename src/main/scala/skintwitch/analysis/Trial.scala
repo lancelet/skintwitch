@@ -232,36 +232,49 @@ case class Trial(
     markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
   
   //--------------------------------------------------------------------------
-  // The maximum I1 value at the maximum response.
+  // Interpolated grid of I1 at the maximum response sample (peak).
   //
-  // Here, we take a grid of i1 and interpolate it at 10x its original
-  // resolution (using bi-cubic interpolation).  Then, we find the maximum
-  // value of I1 from that grid.
-  private lazy val i1_peak: Double = {
+  // This is an INTERPOLATED grid of the first invariant of the left
+  // Cauchy-Green deformation tensor at the maximum response sample.  The grid
+  // is bi-cubically interpolated at 10x its original resolution.
+  private lazy val i1Grid_interp_peak: Grid[Double] = {
     val iRows = i1Grid_peak.numRows * 10
     val iCols = i1Grid_peak.numCols * 10
-    val iGrid = BicubicInterpGrid(i1Grid_peak).toGrid(iRows, iCols)
-    iGrid.rowMajor.max
+    BicubicInterpGrid(i1Grid_peak).toGrid(iRows, iCols)
   }
+    
+  //--------------------------------------------------------------------------
+  // Maximum I1 value at the maximum response.
+  //
+  // Here, we take a grid of I1 and interpolate it at 10x its original
+  // resolution (using bi-cubic interpolation).  Then, we find the maximum
+  // value of I1 from that grid.
+  private lazy val i1_peak: Double = i1Grid_interp_peak.rowMajor.max
   
-  // find the marker (row, col) with the peak i1 value
-  private lazy val peakI1GridLocation: Vec2 = {
-    // first form a grid of i1 values at the maximum response, and find
-    //  the maximum marker
-    val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
-    val (rowMax, colMax) = Averaging.maxCoords(i1Grid)
-    Vec2(rowMax, colMax)
-  }
-  
-  // find the spatial location of the marker with the peak i1 value
-  private lazy val peakI1SpatialLocation: Vec3 = {
-    val rowMax = peakI1GridLocation.x
-    val colMax = peakI1GridLocation.y
-    // now go back to the marker grid, and returns the coordinates of that
-    //  marker at the maximum response
-    Vec3(markerGrid(rowMax.toInt, colMax.toInt).co(maxResponseSample))
-  }
+  //--------------------------------------------------------------------------
+  // Location on B (st space) of the peak i1 value.
+  //
+  // This is found on a grid of I1 which is interpolated at 10x its original
+  // resolution (using bi-cubic interpolation).
+  private lazy val i1_peak_st: Vec2 = i1Grid_interp_peak.maxUV
 
+  //--------------------------------------------------------------------------
+  // Spatial location of the peak i1 value.
+  //
+  // This is found on a grid of I1 which is interpolated at 10x its original
+  // resolution (using bi-cubic interpolation).
+  private lazy val i1_peak_e: Vec3 = {
+    val mesh = markerGrid.diceToTrimesh(maxResponseSample)
+    val st = mesh.texCoordsToPoint(i1_peak_st)
+    if (!st.isDefined) {
+      println("Warning: (s,t) coordinates of the i1_peak were not " +
+          "found in the mesh.  Setting point to (0,0).")
+      Vec3.Zero
+    } else {
+      st.get
+    }
+  }
+  
   // find the i1 value at the poke location at the maximum response
   private lazy val i1AtPokeLocation: Option[Double] = {
     if (pokeMeshDistance.isDefined) {
@@ -278,7 +291,7 @@ case class Trial(
   //  response
   private lazy val distanceFromPokeToMaxI1: Option[Double] = {
     if (pokeMeshDistance.isDefined) {
-      Some((peakI1SpatialLocation - pokeMeshDistance.get.meshPoint).length)
+      Some((i1_peak_e - pokeMeshDistance.get.meshPoint).length)
     } else {
       None
     }
@@ -316,8 +329,8 @@ case class Trial(
     maxResponseSample,
     i1Grid_peak,
     i1_peak,
-    peakI1GridLocation,
-    peakI1SpatialLocation,
+    i1_peak_st,
+    i1_peak_e,
     i1AtPokeLocation,
     distanceFromPokeToMaxI1,
     biot2d,
@@ -340,8 +353,8 @@ case class TrialResult(
   maxResponseSample: Int,
   i1Grid_peak: Grid[Double],
   i1_peak: Double,
-  peakI1GridLocation: Vec2,
-  peakI1SpatialLocation: Vec3,
+  i1_peak_st: Vec2,
+  i1_peak_e: Vec3,
   i1AtPokeLocation: Option[Double],
   distanceFromPokeToMaxI1: Option[Double],
   biot2d: Grid[Mat2],

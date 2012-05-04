@@ -74,29 +74,12 @@ class TriMesh(
     MeshDistance(p, xPoint, st, pointIsOutside)
   }
   
-  /** Shortest signed distance between this mesh and a given point.
-   * 
-   *  The signed distance is positive if a point lies on the outside of the
-   *  mesh, and negative if the point lies on the inside of the mesh (as
-   *  determined by right-hand surface normals).  The method finds the
-   *  absolute shortest distance between the point and the grid, but the
-   *  distance is signed.
-   *  
-   *  @param p the point for which to find the signed distance
-   *  @return the shortest signed distance from the mesh to point `p`, the
-   *    point on the mesh at which the shortest signed distance occurs, and
-   *    the texture coordinates of the point */
-  /*
-  def signedDistanceTo(p: Vec3):
-  (Double, Vec3, Vec2) = {
-    val closestPoints = for {
-      tri <- tris.par
-      (dist, xPoint) = tri.signedDistanceTo(p)
-    } yield (dist, xPoint, tri)
-    val (dist, xPoint, tri) = closestPoints.seq.sortBy(x => math.abs(x._1)).
-      head
-    (dist, xPoint, tri.texCoordsOfPoint(xPoint))
+  /** Find a point in the mesh from its texture coordinates.
+    * 
+    * @param st texture coordinates
+    * @return point in the mesh */
+  def texCoordsToPoint(st: Vec2): Option[Vec3] = {
+    tris.map(_.texCoordsToPoint(st)).find(_.isDefined).get
   }
-  */
-
+  
 }

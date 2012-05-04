@@ -224,9 +224,9 @@ trait Grid[T] { self =>
     * coordinates run from 0.0 to 1.0 inclusive.
     * 
     * @return (u, v) parametric coordinates */
-  def maxUV[Q >: T](implicit o: Ordering[Q]): (Double, Double) = {
+  def maxUV[Q >: T](implicit o: Ordering[Q]): Vec2 = {
     val m = maxRowCol(o)
-    (m._1.toDouble / (numRows - 1), m._2.toDouble / (numCols - 1))
+    Vec2(m._1.toDouble / (numRows - 1), m._2.toDouble / (numCols - 1))
   }
   
 }
