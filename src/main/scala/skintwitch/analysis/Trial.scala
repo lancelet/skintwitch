@@ -91,6 +91,10 @@ case class Trial(
 
   //--------------------------------------------------------------------------
   // Distance from the pointer tip to the grid.
+  //
+  // In order to compute the sample at which the poke occurs (the reference
+  // sample), we need to know the minimum distance of the pointer from the
+  // grid for all time samples.
   private lazy val distance: Seq[MeshDistance] = {
     for {
       i <- 0 until nSamples
@@ -98,60 +102,68 @@ case class Trial(
       pointerPoint = Vec3(pointer.co(i))
     } yield mesh.distanceTo(pointerPoint)
   }
-    
-  // the reference sample (just before the poke occurs).  for Control trials,
-  //  the reference sample is 0, while for Girthline trials, the reference
-  //  sample is specified by `start`.
+
+  //--------------------------------------------------------------------------
+  // The reference sample.
+  //
+  // The reference sample is defined in three different ways:
+  //   1. Control trials.  For control trials, the reference sample is just
+  //       sample 0.  Since no poking is occurring, we have no better way to
+  //       define it, so we might as well just start at the beginning of the
+  //       trial.
+  //   2. Girthline trials.  For girthline trials, each trial was viewed
+  //       by an operator, and a "start" sample was set manually as the time
+  //       at which the girthline stroke began.
+  //   3. All other trials (T6, T11, T16, G1, G2, G3).  The minimum distance
+  //       that the poke reaches into the grid is found first.  Then we find
+  //       when the poker crosses some threshold away from this minimum
+  //       distance.  Then we back off a pre-defined number of samples.
+  //
+  // The reference sample may be overridden flat-out, cancelling all of the
+  // above, by setting the refSampleOverride value.
   private lazy val refSample: Int = refSampleOverride.getOrElse {
-    val cRefSample = if (in.site == "Control") {
-      // take sample 0 as the reference in a control trial
-      0
-    } else if (in.site == "Girthline") {
-      // take start as the reference in a girthline trial
-      in.start.get // this must be defined for girthline
-    } else {
-      // the minimum distance that the pointer reaches within the grid
-      val minDistance: Double = {
-        val withinGridDist = distance.filter(_.stInGrid()).map(_.distance)
-        assert(withinGridDist.length > 0)
-        withinGridDist.min
-      }
-      // compute first time that the pointer reaches the given
-      //  threshold, and then back off a certain number of samples
-      val backOffSamples = (backoffTime * fs).toInt
-      val crossing = distance.indexWhere(md => {
-          md.stInGrid() && (md.distance <= (minDistance + threshold))
-      })
-      val cand = crossing - backOffSamples
-      if (cand < 0) {
-        0
-      } else if (cand >= nSamples) {
-        nSamples - 1
-      } else {
-        cand
+    val cRefSample = in.site match {
+      case "Control" => 0
+      case "Girthline" => in.start.get
+      case _ => {
+        assert(distance.exists(_.stInGrid()), "Poker never entered the grid!")
+        val minDist = distance.filter(_.stInGrid()).map(_.distance).min
+        val crossing = distance.indexWhere(md => {
+          md.stInGrid() && (md.distance <= (minDist + threshold))
+        })
+        val s = crossing - (backoffTime * fs).toInt
+        if (s < 0) 0 else if (s >= nSamples) nSamples - 1 else s
       }
     }
-    assert(cRefSample >= 0 && cRefSample < nSamples)
+    assert(cRefSample >= 0 && cRefSample < nSamples, 
+        "Reference sample %d was outside the allowed range [%d, %d]" format
+         (cRefSample, 0, nSamples-1))
     cRefSample
   }
-
-  // find the poke location in st parametric coordinates.  there is no
-  //  poke location for control trials and girthline trials
-  private lazy val pokeLocation: Option[Vec2] = {
-    if (in.site == "Control" || in.site == "Girthline") {
-      None
-    } else {
-      val mesh = markerGrid.diceToTrimesh(refSample)
-      val meshDistance = mesh.distanceTo(Vec3(pointer.co(refSample)))
-      Some(meshDistance.st)
+  
+  //--------------------------------------------------------------------------
+  // Poke location in parametric coordinates (B).
+  //
+  // The poke location is determined in the parametric coordinates (B) of the
+  // mesh.  Once again, remember that there is no poke location for control
+  // trials or girthline trials.
+  private lazy val pokeB: Option[Vec2] = {
+    in.site match {
+      case "Control" => None
+      case "Girthline" => None
+      case _ => {
+        val mesh = markerGrid.diceToTrimesh(refSample)
+        val p = Vec3(pointer.co(refSample))
+        Some(mesh.distanceTo(p).st)
+      }
     }
   }
-  
+    
   // find the poke location (row, col) in grid coordinates.  there is no poke 
   //  location for control trials and girthline trials.
   private lazy val pokeGridLocation: Option[Vec2] = {
-    if (pokeLocation.isDefined) {
-      val st = pokeLocation.get
+    if (pokeB.isDefined) {
+      val st = pokeB.get
       Some(
         Vec2(st.y * (markerGrid.numRows - 1), st.x * (markerGrid.numCols - 1)))
     } else {
@@ -249,8 +261,8 @@ case class Trial(
 
   // find the i1 value at the poke location at the maximum response
   private lazy val i1AtPokeLocation: Option[Double] = {
-    if (pokeLocation.isDefined) {
-      val st = pokeLocation.get
+    if (pokeB.isDefined) {
+      val st = pokeB.get
       val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
       Some(i1Grid.interpUV(st.x, st.y)(
           () => Linearizable.doubleMultiplyableToLinearizable[Double]))
@@ -298,7 +310,7 @@ case class Trial(
     fs,
     distance,
     refSample,
-    pokeLocation,
+    pokeB,
     pokeGridLocation,
     pokeSpatialLocation,
     strokePath,
@@ -324,7 +336,7 @@ case class TrialResult(
   fs: Double,
   distance: Seq[MeshDistance],
   refSample: Int,
-  pokeLocation: Option[Vec2],
+  pokeB: Option[Vec2],
   pokeGridLocation: Option[Vec2],
   pokeSpatialLocation: Option[Vec3],
   strokePath: Option[Seq[Vec2]],
