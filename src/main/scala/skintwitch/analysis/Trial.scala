@@ -142,35 +142,25 @@ case class Trial(
   }
   
   //--------------------------------------------------------------------------
-  // Poke location in parametric coordinates (B).
+  // Poke location and distance properties.
   //
-  // The poke location is determined in the parametric coordinates (B) of the
-  // mesh.  Once again, remember that there is no poke location for control
-  // trials or girthline trials.
-  private lazy val pokeB: Option[Vec2] = {
+  // The poke has certain properties relative to the mesh, which we can
+  // establish by looking at the pointer at the reference sample.  The
+  // pokeMeshDistance contains the information about:
+  //  - where on the skin manifold (in e_i) the poke occurred (_.meshPoint)
+  //  - the st coordinates of the poke (_.st)
+  private lazy val pokeMeshDistance: Option[MeshDistance] = {
     in.site match {
       case "Control" => None
       case "Girthline" => None
       case _ => {
         val mesh = markerGrid.diceToTrimesh(refSample)
         val p = Vec3(pointer.co(refSample))
-        Some(mesh.distanceTo(p).st)
+        Some(mesh.distanceTo(p))
       }
     }
   }
-  
-  // find the poke location in spatial (3D) coordinates.  there is no poke
-  //  location for control trials and girthline trials
-  private lazy val pokeSpatialLocation: Option[Vec3] = {
-    if (in.site == "Control" || in.site == "Girthline") {
-      None
-    } else {
-      val mesh = markerGrid.diceToTrimesh(refSample)
-      val meshDistance = mesh.distanceTo(Vec3(pointer.co(refSample)))
-      Some(meshDistance.point)
-    }    
-  }
-  
+    
   // find the stroke path for a Girthline trial.  the path is a set of st
   //  parametric coordinates describing the path of the tip marker during the
   //  period it is in contact with the skin
@@ -249,8 +239,8 @@ case class Trial(
 
   // find the i1 value at the poke location at the maximum response
   private lazy val i1AtPokeLocation: Option[Double] = {
-    if (pokeB.isDefined) {
-      val st = pokeB.get
+    if (pokeMeshDistance.isDefined) {
+      val st = pokeMeshDistance.get.st
       val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
       Some(i1Grid.interpUV(st.x, st.y)(
           () => Linearizable.doubleMultiplyableToLinearizable[Double]))
@@ -262,8 +252,8 @@ case class Trial(
   // the distance from the poke location to the location of the maximum I1
   //  response
   private lazy val distanceFromPokeToMaxI1: Option[Double] = {
-    if (pokeSpatialLocation.isDefined) {
-      Some((peakI1SpatialLocation - pokeSpatialLocation.get).length)
+    if (pokeMeshDistance.isDefined) {
+      Some((peakI1SpatialLocation - pokeMeshDistance.get.meshPoint).length)
     } else {
       None
     }
@@ -298,8 +288,7 @@ case class Trial(
     fs,
     distance,
     refSample,
-    pokeB,
-    pokeSpatialLocation,
+    pokeMeshDistance,
     strokePath,
     i1,
     maxResponseSample,
@@ -323,8 +312,7 @@ case class TrialResult(
   fs: Double,
   distance: Seq[MeshDistance],
   refSample: Int,
-  pokeB: Option[Vec2],
-  pokeSpatialLocation: Option[Vec3],
+  pokeMeshDistance: Option[MeshDistance],
   strokePath: Option[Seq[Vec2]],
   i1: IndexedSeq[Double],
   maxResponseSample: Int,

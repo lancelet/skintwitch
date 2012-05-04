@@ -108,9 +108,9 @@ class Analysis {
           } else {
             ""
           }
-          val (pokeX, pokeY) = if (trial.pokeB.isDefined) {
-            ("%f" format trial.pokeB.get.x,
-             "%f" format trial.pokeB.get.y)
+          val (pokeX, pokeY) = if (trial.pokeMeshDistance.isDefined) {
+            ("%f" format trial.pokeMeshDistance.get.st.x,
+             "%f" format trial.pokeMeshDistance.get.st.y)
           } else { 
             ("", "") 
           }
@@ -141,7 +141,7 @@ class Analysis {
     }
     val renderContours = (trial.in.site != "Control")
     Render2DTensors.renderToPDF(plotFileName, Seq(trial.biot2d), 
-                                Seq(trial.pokeB),
+                                Seq(trial.pokeMeshDistance.map(_.st)),
                                 strokePath, renderContours)
   }
   println("Done")
@@ -157,7 +157,7 @@ class Analysis {
     val site = siteTrials._1
     val trials = siteTrials._2
     val grids = trials.map(_.biot2d)
-    val pokes = trials.map(_.pokeB)
+    val pokes = trials.map(_.pokeMeshDistance.map(_.st))
     val plotFileName = OutputMarshalling.getAvgBySiteWithinHorsePlotFileName(
       horse, site)
     val strokePaths = if (site == "Girthline") {
@@ -180,7 +180,8 @@ class Analysis {
     val (grids, pokes) = (for {
       horseTrials <- siteTrials.groupBy(_.in.horse).map(_._2)
       avgGridForHorse = Averaging.mean(horseTrials.map(_.biot2d))
-      avgPokeLocationForHorse = Averaging.mean(horseTrials.map(_.pokeB))
+      avgPokeLocationForHorse = Averaging.mean(horseTrials.map(
+          _.pokeMeshDistance.map(_.st)))
     } yield (avgGridForHorse, avgPokeLocationForHorse)).unzip
     val site = siteTrials.head.in.site
     val plotFileName = OutputMarshalling.
@@ -238,7 +239,7 @@ class Analysis {
       site <- sites
       trialsAtSite = trials.filter(_.in.site == site)
     } {
-      val pokeLocs = trialsAtSite.map(_.pokeB)
+      val pokeLocs = trialsAtSite.map(_.pokeMeshDistance.map(_.st))
       val siteBiot2d = Averaging.mean(trialsAtSite.map(_.biot2d))
       val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid))
       val outFile = new File(OutputMarshalling.getAverageGridsFileName(site))
