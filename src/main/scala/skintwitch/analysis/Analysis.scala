@@ -102,7 +102,7 @@ class Analysis {
           } else {
             ""
           }
-          val peakI1 = trial.peakI1AtMaximumResponse
+          val peakI1 = trial.i1_peak
           val pokeI1 = if (trial.i1AtPokeLocation.isDefined) {
             "%f" format trial.i1AtPokeLocation.get
           } else {
@@ -241,7 +241,7 @@ class Analysis {
     } {
       val pokeLocs = trialsAtSite.map(_.pokeMeshDistance.map(_.st))
       val siteBiot2d = Averaging.mean(trialsAtSite.map(_.biot2d))
-      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid))
+      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid_peak))
       val outFile = new File(OutputMarshalling.getAverageGridsFileName(site))
       val o = new FileWriter(outFile)
       

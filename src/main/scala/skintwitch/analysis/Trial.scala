@@ -104,7 +104,7 @@ case class Trial(
   }
 
   //--------------------------------------------------------------------------
-  // The reference sample.
+  // The reference sample (\mu_0).
   //
   // The reference sample is defined in three different ways:
   //   1. Control trials.  For control trials, the reference sample is just
@@ -117,7 +117,8 @@ case class Trial(
   //   3. All other trials (T6, T11, T16, G1, G2, G3).  The minimum distance
   //       that the poke reaches into the grid is found first.  Then we find
   //       when the poker crosses some threshold away from this minimum
-  //       distance.  Then we back off a pre-defined number of samples.
+  //       distance.  Then we back off a pre-defined number of samples
+  //       (calculated from backoffTime).
   //
   // The reference sample may be overridden flat-out, cancelling all of the
   // above, by setting the refSampleOverride value.
@@ -148,7 +149,7 @@ case class Trial(
   // establish by looking at the pointer at the reference sample.  The
   // pokeMeshDistance contains the information about:
   //  - where on the skin manifold (in e_i) the poke occurred (_.meshPoint)
-  //  - the st coordinates of the poke (_.st)
+  //  - the st coordinates (in the B parametric space) of the poke (_.st)
   private lazy val pokeMeshDistance: Option[MeshDistance] = {
     in.site match {
       case "Control" => None
@@ -164,7 +165,7 @@ case class Trial(
   //--------------------------------------------------------------------------
   // Stroke path for a Girthline trial.
   //
-  // Instead of a single poke poink, a girthline trial has a path, which
+  // Instead of a single poke point, a girthline trial has a path, which
   // consists of the st coordinates (in B parametric space) of the end of the
   // pointer/poker through time.  This path is the path of the tip marker
   // during the period that it was in contact with the skin (from in.start to
@@ -186,41 +187,61 @@ case class Trial(
   }
   
   //--------------------------------------------------------------------------
-  // Grid (spatial) average of the first invariant of the left Cauchy-Green
-  // deformaiton tensor at each time sample.
+  // Grid average of the first invariant of the left Cauchy-Green
+  // deformation tensor at each time sample (\bar{I_1}_{(\mu\mu0)}).
   private lazy val i1Bar: IndexedSeq[Double] = 
     for (i <- 0 until nSamples) yield 
       markerGrid.avgLCauchyGreenI1(refSample, i)
   
-  // compute the maximum response sample.  this is the first peak in the
-  //  i1 values following the poke
+  //--------------------------------------------------------------------------
+  // Maximum response sample (\mu_*).
+  //
+  // The maximum response sample is the first peak in the i1Bar values
+  // following the poke sample.  If it happens that a peak never occurs
+  // (monotonically increasing or decreasing i1Bar), then we issue a warning
+  // to the console and use the last sample of the trial.  However, in the
+  // test trials, this doesn't happen.
   private lazy val maxResponseSample: Int = {
-    // i1dot is the finite difference of successive i1 values
-    val i1dot = for {
+    // finite-difference of successive i1Bar values
+    val i1BarDot = for {
       (x0, x1) <- i1Bar zip (i1Bar.tail)
       delta = x1 - x0
     } yield delta
-    // firstPositive is when i1dot first becomes positive after the reference
-    //  sample
-    val firstPositive = i1dot.indexWhere(_ > 0, refSample)
-    // now find where i1dot becomes negative after firstPositive
-    val maxCandidate = i1dot.indexWhere(_ < 0, firstPositive)
-    val mrs = if (maxCandidate == -1) {
-      println("WARNING: Peak not found; setting maxResponseSample to end " +
-      		"for trial %s, site %s." format(idString, in.site))
-      println("         (This may not be a problem for Girthline trials.)")
+    // identify the first positive gradient after the reference sample
+    val pgSample = i1BarDot.indexWhere(_ > 0, refSample)
+    // first negative gradient after pgSample
+    val ngSample = i1BarDot.indexWhere(_ < 0, pgSample)
+    // hand the case where a peak doesn't exist (hopefully should never
+    //  happen)
+    val peakSample = if (ngSample == -1) {
+      println("WARNING: Peak in i1Bar not found; setting maxResponseSample " +
+          "to end for trial %s, site %s." format (idString, in.site))
       nSamples - 1
     } else {
-      maxCandidate
+      ngSample
     }
-    assert(mrs > refSample && mrs < nSamples) 
-    mrs
+    peakSample
   }
+    
+  //--------------------------------------------------------------------------
+  // Grid of I1 at the maximum response sample (peak).
+  //
+  // This is a grid (NOT interpolated) of the first invariant of the left
+  // Cauchy-Green deformation tensor at the maximum response sample.
+  private lazy val i1Grid_peak: Grid[Double] = 
+    markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
   
-  // find the peak I1 value at the maximum response sample
-  private lazy val peakI1AtMaximumResponse: Double = {
-    val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
-    i1Grid.rowMajor.max
+  //--------------------------------------------------------------------------
+  // The maximum I1 value at the maximum response.
+  //
+  // Here, we take a grid of i1 and interpolate it at 10x its original
+  // resolution (using bi-cubic interpolation).  Then, we find the maximum
+  // value of I1 from that grid.
+  private lazy val i1_peak: Double = {
+    val iRows = i1Grid_peak.numRows * 10
+    val iCols = i1Grid_peak.numCols * 10
+    val iGrid = BicubicInterpGrid(i1Grid_peak).toGrid(iRows, iCols)
+    iGrid.rowMajor.max
   }
   
   // find the marker (row, col) with the peak i1 value
@@ -281,9 +302,6 @@ case class Trial(
     minPSGrid.rowMajor.min
   }
     
-  // compute the I1 grid for this trial
-  private lazy val i1Grid: Grid[Double] = 
-    markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
     
   lazy val result: TrialResult = new TrialResult(
     in,
@@ -296,14 +314,14 @@ case class Trial(
     strokePath,
     i1Bar,
     maxResponseSample,
-    peakI1AtMaximumResponse,
+    i1Grid_peak,
+    i1_peak,
     peakI1GridLocation,
     peakI1SpatialLocation,
     i1AtPokeLocation,
     distanceFromPokeToMaxI1,
     biot2d,
-    minPrinStrainAtMaxResponse,
-    i1Grid
+    minPrinStrainAtMaxResponse
   )
 
 }
@@ -320,14 +338,14 @@ case class TrialResult(
   strokePath: Option[Seq[Vec2]],
   i1Bar: IndexedSeq[Double],
   maxResponseSample: Int,
-  peakI1AtMaximumResponse: Double,
+  i1Grid_peak: Grid[Double],
+  i1_peak: Double,
   peakI1GridLocation: Vec2,
   peakI1SpatialLocation: Vec3,
   i1AtPokeLocation: Option[Double],
   distanceFromPokeToMaxI1: Option[Double],
   biot2d: Grid[Mat2],
-  minPrinStrainAtMaxResponse: Double,
-  i1Grid: Grid[Double]
+  minPrinStrainAtMaxResponse: Double
 )
 
 
