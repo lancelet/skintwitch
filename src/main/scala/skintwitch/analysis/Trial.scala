@@ -70,7 +70,7 @@ case class Trial(
   // marker, and double-check that they match for all other markers.
   private lazy val nSamples: Int = {
     val n = markerGrid(0, 0).co.length
-    assert(markers.forall(_.co.length == nSamples),
+    assert(markers.forall(_.co.length == n),
         "Markers must all have the same number of samples.")
     n
   }
