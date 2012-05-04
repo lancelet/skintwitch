@@ -195,6 +195,7 @@ class Analysis {
                                 pokes.toIndexedSeq, strokePaths,
                                 renderContours)
   }
+  println("Done")
   
   //---------------------------------------------------------------------------
   // Output data for the minimum principal strain (compressive) at the point of
@@ -223,7 +224,9 @@ class Analysis {
     
     o.close()
   }
+  println("Saving minimum principal strains at max response")
   saveMinPrinStrains()
+  println("Done")
   
   //---------------------------------------------------------------------------
   // Output average grids of I1, Biot strain and poke location lists for each
@@ -281,8 +284,8 @@ class Analysis {
       o.close()
     }
   }
+  println("Saving average grids at max response")
   saveAverageGrids()
-  
   println("Done")
   
 }

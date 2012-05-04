@@ -104,20 +104,15 @@ extends AnimatedActor {
     points.Modified
     
     // update the points for the distance actor
-    def ptIsInMesh(st: Vec2): Boolean = {
-      val minm = 1.0e-2
-      val maxm = 1.0 - minm
-      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
-    }
     distPoints.Reset
     val triMesh = grid.diceToTrimesh(sample)
-    val (dist, contactPt, st) = triMesh.signedDistanceTo(Vec3(mTip.co(sample)))
+    val meshDistance = triMesh.distanceTo(Vec3(mTip.co(sample)))
     val tip = mTip.co(sample)
-    val con = contactPt
+    val con = meshDistance.meshPoint
     distPoints.InsertNextPoint(tip.x, tip.y, tip.z)
     distPoints.InsertNextPoint(con.x, con.y, con.z)
-    if (ptIsInMesh(st)) {
-      if (dist < 0) {
+    if (meshDistance.stInGrid()) {
+      if (meshDistance.distance < 0) {
         distActor.GetProperty.SetColor(1.0, 0.5, 0.5)
       } else {
         distActor.GetProperty.SetColor(0.0, 0.0, 0.0)

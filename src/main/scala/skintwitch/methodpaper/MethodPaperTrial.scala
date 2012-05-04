@@ -15,6 +15,7 @@ import skintwitch.BicubicInterpGrid
 import skintwitch.Mat2
 import skintwitch.Vec2
 import skintwitch.Vec3
+import skintwitch.mesh.MeshDistance
 
 
 /** Analysis of a single trial for the method paper. 
@@ -81,19 +82,13 @@ case class MethodPaperTrial(
   // distanceAnnotated is the distance from the pointer tip to the grid,
   //  and a second tuple element indicating whether the pointer at the
   //  computed distance lies "within" the grid
-  val distanceAnnotated: Seq[(Double, Boolean)] = {
-    def isWithinGrid(st: Vec2): Boolean = {
-      val minm = 0.01
-      val maxm = 1 - minm
-      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
-    }
+  val distance: Seq[MeshDistance] = {
     for {
       i <- 0 until nSamples
       mesh = markerGrid.diceToTrimesh(i)
-      (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
-      inGrid = isWithinGrid(st)
-    } yield (distance, inGrid)
-  }  
+      pointerPoint = Vec3(pointer.co(i))
+    } yield mesh.distanceTo(pointerPoint)
+  }
   
   //--------------------------------------------------------------------------
   // the reference sample (when the poke occurs).  for Control trials,
@@ -107,18 +102,16 @@ case class MethodPaperTrial(
       case _ => {
         // minimum distance the pointer reaches within the grid
         val minDistance: Double = {
-          val withinGridDist = distanceAnnotated.filter(_._2).map(_._1)
+          val withinGridDist = distance.filter(_.stInGrid()).map(_.distance)
           assert(withinGridDist.length > 0)
           withinGridDist.min
         }        
         // find when the pointer reaches `threshold`, and then back off
         //  `backoffTime`
         val backoffSamples = (backoffTime * fs).toInt
-        val crossing = distanceAnnotated.indexWhere(
-          (da: (Double, Boolean)) => {
-            da._2 && da._1 <= (minDistance + threshold)
-          }
-        )
+        val crossing = distance.indexWhere(md => {
+          md.stInGrid() && (md.distance <= (minDistance + threshold))
+        })
         MethodPaperTrial.clamp(crossing - backoffSamples, 0, nSamples-1)
       }
     }
@@ -195,9 +188,8 @@ case class MethodPaperTrial(
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = 
-        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
-      Some(st)
+      val meshDistance = mesh.distanceTo(Vec3(pointer.co(refSample)))
+      Some(meshDistance.st)
     }
   }
     

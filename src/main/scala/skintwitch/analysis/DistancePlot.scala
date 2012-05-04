@@ -22,7 +22,8 @@ object DistancePlot {
     
     // construct separate series for samples inside the grid and samples
     //  outside the grid
-    val (distance, inGrid) = trial.distanceAnnotated.unzip
+    val distance = trial.distance.map(_.distance)
+    val inGrid = trial.distance.map(_.stInGrid())
     val richInGrid = RichSeq(inGrid)
     val inGridRegions = richInGrid.slicesWhere(_ == true)
     val outGridRegions = richInGrid.slicesWhere(_ == false)

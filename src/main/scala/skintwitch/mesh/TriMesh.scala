@@ -60,17 +60,18 @@ class TriMesh(
    *  precise distance testing as a second step.
    *
    *  @param p the point for which to find the shortest distance
-   *  @return the shortest distance from the mesh to point `p`, the
-   *    point on the mesh at which the shortest distance occurs, and the
-   *    texture coordinates of the point */
-  def distanceTo(p: Vec3): 
-  (Double, Vec3, Vec2) = {
-    val closestPoints = for {
+   *  @return a MeshDistance class containing the results of the query of
+   *    the shortest distance from the mesh to point `p`. */
+  def distanceTo(p: Vec3): MeshDistance = {
+    val closestPointForEachTri = for {
       tri <- tris.par
-      (dist, xPoint) = tri.distanceTo(p)
+      (dist, xPoint) = tri.signedDistanceTo(p)
     } yield (dist, xPoint, tri)
-    val (dist, xPoint, tri) = closestPoints.seq.sortBy(_._1).head
-    (dist, xPoint, tri.texCoordsOfPoint(xPoint))
+    def absDist(x: (Double, Vec3, Tri)): Double = math.abs(x._1)
+    val (dist, xPoint, tri) = closestPointForEachTri.seq.sortBy(absDist).head
+    val pointIsOutside: Boolean = dist > 0
+    val st: Vec2 = tri.texCoordsOfPoint(xPoint)
+    MeshDistance(p, xPoint, st, pointIsOutside)
   }
   
   /** Shortest signed distance between this mesh and a given point.
@@ -85,6 +86,7 @@ class TriMesh(
    *  @return the shortest signed distance from the mesh to point `p`, the
    *    point on the mesh at which the shortest signed distance occurs, and
    *    the texture coordinates of the point */
+  /*
   def signedDistanceTo(p: Vec3):
   (Double, Vec3, Vec2) = {
     val closestPoints = for {
@@ -95,5 +97,6 @@ class TriMesh(
       head
     (dist, xPoint, tri.texCoordsOfPoint(xPoint))
   }
+  */
 
 }

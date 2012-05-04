@@ -103,18 +103,12 @@ class I1PlotActor(
         (pLong, mLong), (pMiddle, mMiddle), (pShort, mShort), (pMed, mMed)))
     }
 
-    def inGrid(st: Vec2): Boolean = { 
-      val minm = 0.01
-      val maxm = 1.0 - minm
-      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
-    }
-    
     // find distance to the mesh at each time index
     for {
       i <- 0 until markers(0).co.length
       triMesh = grid.diceToTrimesh(i)
-      (dist, xPoint, st) = triMesh.signedDistanceTo(Vec3(mTip.co(i)))
-    } yield (dist, inGrid(st))    
+      meshDistance = triMesh.distanceTo(Vec3(mTip.co(i)))
+    } yield (meshDistance.distance, meshDistance.stInGrid())    
   }
 
   /** Finds the reference sample index. */

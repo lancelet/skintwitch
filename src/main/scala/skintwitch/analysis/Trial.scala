@@ -16,6 +16,7 @@ import skintwitch.Mat3
 import skintwitch.Vec2
 import skintwitch.Vec3
 import skintwitch.Linearizable
+import skintwitch.mesh.MeshDistance
 
 /** A trial; encompassing much of the processing required for an individual
  *  trial.
@@ -32,54 +33,72 @@ case class Trial(
   in: TrialInput,
   refSampleOverride: Option[Int] = None,
   cutoffFreq: Double = 5.0,
-  /*i1cutoffFreq: Double = 5.0,*/
   threshold: Double = 12.0,
   backoffTime: Double = 0.0
 ) {
 
   import Trial._
   
-  // a unique identifier string for this trial
+  //--------------------------------------------------------------------------
+  // Create a unique identifier string for this trial.
+  //
+  // The marker string identifies the horse and the trial number, which
+  // uniquely identifies the trial.
   private val idString = "%s_trial%s" format (in.horse, in.trialNumber)
   
-  // load and filter markers from the main trial
+  //--------------------------------------------------------------------------
+  // Load and filter markers from the main trial.
+  //
+  // Markers are loaded for the trial.  In this step, the markers are loaded,
+  // force-filled (to remove any data gaps), and low-pass filtered at a
+  // cut-off frequency which is passed-in to the trial.
   private lazy val markers: Seq[Marker] = 
     loadMarkers(in.inputFile).map(_.butter2(cutoffFreq))
-  
-  // create the marker grid
+
+  //--------------------------------------------------------------------------
+  // Create the marker grid.
+  //
+  // The marker grid is the main representation of the marker data.  The
+  // marker grid holds all of the markers in a 2D grid.  Each marker holds
+  // its own information about its position at a given time sample.
   private lazy val markerGrid: MarkerGrid = MarkerGrid.fromCRMarkers(markers)
 
-  // set number of samples in the trial and the sampling frequency (just
-  //  fetch them from the first marker for the grid; they have to be the
-  //  same for all markers)
-  private lazy val nSamples: Int = markerGrid(0, 0).co.length
+  //--------------------------------------------------------------------------
+  // Number of samples and sampling rate.
+  //
+  // We fetch the number of samples and the sampling rate from the first
+  // marker, and double-check that they match for all other markers.
+  private lazy val nSamples: Int = {
+    val n = markerGrid(0, 0).co.length
+    assert(markers.forall(_.co.length == nSamples),
+        "Markers must all have the same number of samples.")
+    n
+  }
   private lazy val fs: Double = {
     val fs0 = markerGrid(0, 0).fs
-    assert(markers.forall(m => m.co.length == nSamples && m.fs == fs0))
+    assert(markers.forall(_.fs == fs0),
+        "Markers must all have the same sampling rate.")
     fs0
   }
-  
-  // create the virtual marker for the pointer tip
+
+  //--------------------------------------------------------------------------
+  // Create the virtual marker for the pointer tip.
+  //
+  // The pointer tip marker is constructed as a virtual marker using the
+  // cluster of markers on the pointer/poking device.
   private lazy val pointer: Marker = 
     createPointerTipMarker(in.pointerFile, markers)
 
-  // distanceAnnotated is the distance from the pointer tip to the grid,
-  //  and a second tuple element indicating whether the pointer at the
-  //  computed distance lies "within" the grid
-  private lazy val distanceAnnotated: Seq[(Double, Boolean)] = {
-    def isWithinGrid(st: Vec2): Boolean = {
-      val minm = 0.01
-      val maxm = 1 - minm
-      (st.x > minm) && (st.x < maxm) && (st.y > minm) && (st.y < maxm)
-    }
+  //--------------------------------------------------------------------------
+  // Distance from the pointer tip to the grid.
+  private lazy val distance: Seq[MeshDistance] = {
     for {
       i <- 0 until nSamples
       mesh = markerGrid.diceToTrimesh(i)
-      (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
-      inGrid = isWithinGrid(st)
-    } yield (distance, inGrid)
+      pointerPoint = Vec3(pointer.co(i))
+    } yield mesh.distanceTo(pointerPoint)
   }
-  
+    
   // the reference sample (just before the poke occurs).  for Control trials,
   //  the reference sample is 0, while for Girthline trials, the reference
   //  sample is specified by `start`.
@@ -93,18 +112,16 @@ case class Trial(
     } else {
       // the minimum distance that the pointer reaches within the grid
       val minDistance: Double = {
-        val withinGridDist = distanceAnnotated.filter(_._2).map(_._1)
+        val withinGridDist = distance.filter(_.stInGrid()).map(_.distance)
         assert(withinGridDist.length > 0)
         withinGridDist.min
       }
       // compute first time that the pointer reaches the given
       //  threshold, and then back off a certain number of samples
       val backOffSamples = (backoffTime * fs).toInt
-      val crossing = distanceAnnotated.indexWhere(
-        (da: (Double, Boolean)) => {
-          da._2 && da._1 <= (minDistance + threshold)
-        }
-      )
+      val crossing = distance.indexWhere(md => {
+          md.stInGrid() && (md.distance <= (minDistance + threshold))
+      })
       val cand = crossing - backOffSamples
       if (cand < 0) {
         0
@@ -125,9 +142,8 @@ case class Trial(
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = 
-        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
-      Some(st)
+      val meshDistance = mesh.distanceTo(Vec3(pointer.co(refSample)))
+      Some(meshDistance.st)
     }
   }
   
@@ -150,9 +166,8 @@ case class Trial(
       None
     } else {
       val mesh = markerGrid.diceToTrimesh(refSample)
-      val (distance, xPoint, st) = 
-        mesh.signedDistanceTo(Vec3(pointer.co(refSample)))
-      Some(xPoint)
+      val meshDistance = mesh.distanceTo(Vec3(pointer.co(refSample)))
+      Some(meshDistance.point)
     }    
   }
   
@@ -166,8 +181,8 @@ case class Trial(
       val coords = for {
         i <- start until end
         mesh = markerGrid.diceToTrimesh(i)
-        (distance, xPoint, st) = mesh.signedDistanceTo(Vec3(pointer.co(i)))
-      } yield st
+        meshDistance = mesh.distanceTo(Vec3(pointer.co(i)))
+      } yield meshDistance.st
       Some(coords)
     } else {
       None
@@ -181,15 +196,6 @@ case class Trial(
     i <- 0 until nSamples
   } yield markerGrid.avgLCauchyGreenI1(refSample, i)
   
-  // perform some extra filtering on i1, for the purpose of finding its
-  //  initial peak value
-  /*
-  val i1Filt: IndexedSeq[Double] = {
-    val sos = Butter.butterSOSEven(2, i1cutoffFreq / (fs / 2)).head
-    val b = IndexedSeq(sos.b0, sos.b1, sos.b2)
-    val a = IndexedSeq(   1.0, sos.a1, sos.a2)
-    FiltFilt.filtfilt(b, a, i1)
-  }*/
   private lazy val i1Filt: IndexedSeq[Double] = i1  // disable extra filtering
   
   // compute the maximum response sample.  this is the first peak in the
@@ -290,7 +296,7 @@ case class Trial(
     idString,
     nSamples,
     fs,
-    distanceAnnotated,
+    distance,
     refSample,
     pokeLocation,
     pokeGridLocation,
@@ -316,7 +322,7 @@ case class TrialResult(
   idString: String,
   nSamples: Int,
   fs: Double,
-  distanceAnnotated: Seq[(Double, Boolean)],
+  distance: Seq[MeshDistance],
   refSample: Int,
   pokeLocation: Option[Vec2],
   pokeGridLocation: Option[Vec2],
