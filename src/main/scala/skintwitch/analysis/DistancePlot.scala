@@ -18,7 +18,7 @@ import org.jfree.chart.plot.ValueMarker
 
 object DistancePlot {
 
-  def plot(fileName: String, trial: TrialResult) {
+  def plot(fileName: String, trial: Trial.Result) {
     
     // construct separate series for samples inside the grid and samples
     //  outside the grid

@@ -96,8 +96,8 @@ class GridTest extends FunSuite with ShouldMatchers {
     }
     val eps = 1e-10
     val maxLoc = g.maxUV
-    maxLoc._1 should be ((1.0 / 3.0) plusOrMinus eps)
-    maxLoc._2 should be ((2.0 / 3.0) plusOrMinus eps)    
+    maxLoc.x should be ((1.0 / 3.0) plusOrMinus eps)
+    maxLoc.y should be ((2.0 / 3.0) plusOrMinus eps)    
   }
   
 }

@@ -265,46 +265,50 @@ case class Trial(
   // resolution (using bi-cubic interpolation).
   private lazy val i1_peak_e: Vec3 = {
     val mesh = markerGrid.diceToTrimesh(maxResponseSample)
-    val st = mesh.texCoordsToPoint(i1_peak_st)
-    if (!st.isDefined) {
+    val v = mesh.texCoordsToPoint(i1_peak_st)
+    if (!v.isDefined) {
       println("Warning: (s,t) coordinates of the i1_peak were not " +
           "found in the mesh.  Setting point to (0,0).")
       Vec3.Zero
     } else {
-      st.get
+      v.get
     }
   }
   
-  // find the i1 value at the poke location at the maximum response
+  //--------------------------------------------------------------------------
+  // I1 value at the poke location, at the maximum response.
   private lazy val i1AtPokeLocation: Option[Double] = {
-    if (pokeMeshDistance.isDefined) {
-      val st = pokeMeshDistance.get.st
-      val i1Grid = markerGrid.lCauchyGreenI1(refSample, maxResponseSample)
-      Some(i1Grid.interpUV(st.x, st.y)(
-          () => Linearizable.doubleMultiplyableToLinearizable[Double]))
-    } else {
-      None
-    }
+    pokeMeshDistance.map(pmd => {
+      val u = pmd.st.x
+      val v = pmd.st.y
+      import skintwitch.DoubleMultiplyable._
+      import skintwitch.Linearizable._
+      i1Grid_interp_peak.interpUV(u, v)(() => doubleMultiplyableToLinearizable)
+    })
   }
-  
-  // the distance from the poke location to the location of the maximum I1
-  //  response
+
+  //--------------------------------------------------------------------------
+  // Distance from the poke location to the location of the maximum I1
+  //  response in the lab coordinate system
   private lazy val distanceFromPokeToMaxI1: Option[Double] = {
-    if (pokeMeshDistance.isDefined) {
-      Some((i1_peak_e - pokeMeshDistance.get.meshPoint).length)
-    } else {
-      None
-    }
+    pokeMeshDistance.map(pmd => {
+      (i1_peak_e - pmd.meshPoint).length
+    })
   }
-  
-  // compute the Biot strain tensor in 2D, at the maximum response sample,
-  //  relative to the reference sample
+
+  //--------------------------------------------------------------------------
+  // Biot strain tensor, in 2D, at the maximum response sample.
+  //
+  // Computed relative to the reference sample.
   private lazy val biot2d: Grid[Mat2] = 
     markerGrid.biot2D(refSample, maxResponseSample)
 
-  // find the minimum principal strain (compressive) with the largest magnitude
-  //  at the maximum response sample.  here we interpolate a grid of biot2d
-  //  at 10x its original resolution.
+  //--------------------------------------------------------------------------
+  // Minimum principal (compressive) strain with largest magnitude at the 
+  // maximum response.
+  //
+  // This is computed on a grid of the Biot strain which has been interpolated
+  // (bicubic) at 10x its original resolution.
   private lazy val minPrinStrainAtMaxResponse: Double = {
     val biotGrid: Grid[Mat3] = markerGrid.biot(refSample, maxResponseSample)
     def minPS(m: Mat3): Double = m.eigSymm.map(_._1).min
@@ -315,8 +319,9 @@ case class Trial(
     minPSGrid.rowMajor.min
   }
     
-    
-  lazy val result: TrialResult = new TrialResult(
+  //--------------------------------------------------------------------------
+  // Package all of the trial results in a separate object.
+  lazy val result: Result = Result(
     in,
     idString,
     nSamples,
@@ -340,29 +345,30 @@ case class Trial(
 }
 
 
-case class TrialResult(
-  in: TrialInput,
-  idString: String,
-  nSamples: Int,
-  fs: Double,
-  distance: Seq[MeshDistance],
-  refSample: Int,
-  pokeMeshDistance: Option[MeshDistance],
-  strokePath: Option[Seq[Vec2]],
-  i1Bar: IndexedSeq[Double],
-  maxResponseSample: Int,
-  i1Grid_peak: Grid[Double],
-  i1_peak: Double,
-  i1_peak_st: Vec2,
-  i1_peak_e: Vec3,
-  i1AtPokeLocation: Option[Double],
-  distanceFromPokeToMaxI1: Option[Double],
-  biot2d: Grid[Mat2],
-  minPrinStrainAtMaxResponse: Double
-)
-
-
 object Trial {
+
+  /** Result object for the trial. */
+  case class Result(
+    in: TrialInput,
+    idString: String,
+    nSamples: Int,
+    fs: Double,
+    distance: Seq[MeshDistance],
+    refSample: Int,
+    pokeMeshDistance: Option[MeshDistance],
+    strokePath: Option[Seq[Vec2]],
+    i1Bar: IndexedSeq[Double],
+    maxResponseSample: Int,
+    i1Grid_peak: Grid[Double],
+    i1_peak: Double,
+    i1_peak_st: Vec2,
+    i1_peak_e: Vec3,
+    i1AtPokeLocation: Option[Double],
+    distanceFromPokeToMaxI1: Option[Double],
+    biot2d: Grid[Mat2],
+    minPrinStrainAtMaxResponse: Double
+  )
+  
   
   /** Loads markers from a TRC file, masks out any empty markers, and
    *  force-fills the rest. */

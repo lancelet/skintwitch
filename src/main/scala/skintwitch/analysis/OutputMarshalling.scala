@@ -23,7 +23,7 @@ object OutputMarshalling {
     }
   }
     
-  def getMaxResponsePlotFileName(trial: TrialResult): String = {
+  def getMaxResponsePlotFileName(trial: Trial.Result): String = {
     "%s/%s-maxresponse.pdf" format (plotDir, trial.idString)
   }
 
@@ -36,11 +36,11 @@ object OutputMarshalling {
     "%s/avg-across-horses-%s.pdf" format (plotDir, site)
   }
   
-  def getDistancePlotFileName(trial: TrialResult): String = {
+  def getDistancePlotFileName(trial: Trial.Result): String = {
     "%s/%s-distance.pdf" format (plotDir, trial.idString)
   }
   
-  def getI1PlotFileName(trial: TrialResult): String = {
+  def getI1PlotFileName(trial: Trial.Result): String = {
     "%s/%s-i1.pdf" format (plotDir, trial.idString)
   }
   

@@ -17,7 +17,7 @@ import org.jfree.chart.plot.ValueMarker
 
 object I1Plot {
 
-  def plot(fileName: String, trial: TrialResult) {
+  def plot(fileName: String, trial: Trial.Result) {
     
     // create time series for the I1 value
     val i1series = TimeSampledSeries("i1", trial.i1Bar, trial.fs)

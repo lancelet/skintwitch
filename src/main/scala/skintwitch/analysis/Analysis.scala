@@ -20,7 +20,7 @@ class Analysis {
   
   //--------------------------------------------------------------------------
   // verify / create output directories
-  println("Verying / creating output directories")
+  println("Verfying / creating output directories")
   OutputMarshalling.verifyOrCreateOutputDirs()
   
   //--------------------------------------------------------------------------
@@ -32,7 +32,7 @@ class Analysis {
   // processing required, leaving us to query the Trial object for the plot
   // quantities we need.
   println("Loading trials")
-  val trials: Seq[TrialResult] = (for (inTrial <- inTrials.par) yield {
+  val trials: Seq[Trial.Result] = (for (inTrial <- inTrials.par) yield {
     val trial = try {
       // this should create Trial as a temporary object; perform processing
       //  and then dump the Trial, leaving only the TrialResult (making memory
