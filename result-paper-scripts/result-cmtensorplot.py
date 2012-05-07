@@ -22,9 +22,9 @@ import cmtensorplot
 from cmtensorplot import load_avg_grid_file, plot_I1, plot_pokes, plot_e
 
 def plot_result_paper_avg_grids():
-    t6_data = load_avg_grid_file(open('../output/plots/avg-grid-T6.csv'))
-    t11_data = load_avg_grid_file(open('../output/plots/avg-grid-T11.csv'))
-    t16_data = load_avg_grid_file(open('../output/plots/avg-grid-T16.csv'))
+    t6_data = load_avg_grid_file(open('../output/csv/avg-grid-T6.csv'))
+    t11_data = load_avg_grid_file(open('../output/csv/avg-grid-T11.csv'))
+    t16_data = load_avg_grid_file(open('../output/csv/avg-grid-T16.csv'))
 
     # limits for the color bar
     vmin = 3.0
