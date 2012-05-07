@@ -6,6 +6,7 @@ import org.ejml.simple.SimpleMatrix
 case class Vec2(x: Double, y: Double) {
 
   def +(o: Vec2): Vec2 = Vec2(x + o.x, y + o.y)
+  def -(o: Vec2): Vec2 = Vec2(x - o.x, y - o.y)
   def *(s: Double): Vec2 = Vec2(x * s, y * s)
   def /(s: Double): Vec2 = Vec2(x / s, y / s)
   

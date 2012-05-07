@@ -56,4 +56,7 @@ object OutputMarshalling {
     "%s/avg-grid-%s.csv" format (csvDir, site)
   }
   
+  def getRelativeResponseLocationsFileName(): String = {
+    "%s/response-locations-relative-to-pokes.csv" format (csvDir)
+  }
 }

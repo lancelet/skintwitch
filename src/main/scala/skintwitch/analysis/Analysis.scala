@@ -3,6 +3,7 @@ package skintwitch.analysis
 import scala.collection.immutable._
 import java.io.File
 import skintwitch.renderplanar.Render2DTensors
+import skintwitch.Vec2
 import java.io.FileWriter
 
 class Analysis {
@@ -20,7 +21,7 @@ class Analysis {
   
   //--------------------------------------------------------------------------
   // verify / create output directories
-  println("Verfying / creating output directories")
+  println("Verifying / creating output directories")
   OutputMarshalling.verifyOrCreateOutputDirs()
   
   //--------------------------------------------------------------------------
@@ -287,6 +288,31 @@ class Analysis {
   }
   println("Saving average grids at max response")
   saveAverageGrids()
+  println("Done")
+  
+  //---------------------------------------------------------------------------
+  // Output maximum response locations, adjusted so that they're expressed 
+  // relative to the poke location of each trial.
+  def saveRelativeResponseLocations() {
+    val outFile = 
+      new File(OutputMarshalling.getRelativeResponseLocationsFileName)
+    val o = new FileWriter(outFile)
+    o.write("Site,Horse,RelX,RelY\n")
+    for (trial <- trials) {
+      val site: String = trial.in.site
+      val horse: String = trial.in.horse
+      val poke_st_opt: Option[Vec2] = trial.pokeMeshDistance.map(_.st)
+      val i1_peak_st: Vec2 = trial.i1_peak_st
+      if (poke_st_opt.isDefined) {
+        val poke_st = poke_st_opt.get
+        val rel_xy = i1_peak_st - poke_st
+        o.write("%s,%s,%s,%s\n" format(site, horse, rel_xy.x, rel_xy.y))
+      }
+    }
+    o.close()
+  }
+  println("Saving maximum response locations relative to pokes")
+  saveRelativeResponseLocations()
   println("Done")
   
 }
