@@ -1,8 +1,10 @@
 package skintwitch.methodpaper
 
+import scala.collection.immutable._
 import java.io.File
 import skintwitch.analysis.Averaging
 import skintwitch.analysis.InputMarshalling
+import skintwitch.analysis.Trial
 import skintwitch.analysis.TrialInput
 import java.io.FileWriter
 import skintwitch.GridDumper
@@ -34,13 +36,13 @@ object MethodPaperAnalysis extends App {
   
   //--------------------------------------------------------------------------
   // Load all trials for horse 11.
-  // This involves mapping each TrialInput object to a MethodPaperTrial object.
+  // This involves mapping each TrialInput object to a Trial object.
   // In doing so, we perform most of the processing required, leaving us free
-  // to query the MethodPaperTrial object for information we need.
+  // to query the Trial.Result object for information we need.
   println("Processing trials for %s" format horse)
-  val trials = (for (inTrial <- inTrials.par) yield {
+  val trials: Seq[Trial.Result] = (for (inTrial <- inTrials.par) yield {
     val trial = try {
-      MethodPaperTrial(inTrial)
+      Trial(inTrial).result
     } catch { // CAUTION: INDISCRIMINATE EXCEPTION CATCHING: REPORT ALL BELOW
       case e => {
         println("Exception loading trial %s" format inTrial.inputFile.getName)
@@ -98,8 +100,8 @@ object MethodPaperAnalysis extends App {
       "\n"
     )
     for (trial <- bySite) {
-      val uv = trial.maxI1AtMaxResponseUVCoords
-      val i_uv = trial.i1AtMaxResponseInterp.rowMajor.max - 3.0
+      val uv = trial.i1_peak_st
+      val i_uv = trial.i1_peak - 3.0
       o.write("%s, %f, %f, %f\n" format (trial.in.site, uv.y, uv.x, i_uv))
     }
     o.close()
@@ -114,9 +116,9 @@ object MethodPaperAnalysis extends App {
       site <- sites
       trialsAtSite = trials.filter(_.in.site == site)
     } {
-      val pokeLocs = trialsAtSite.map(_.pokeLocation)
+      val pokeLocs = trialsAtSite.map(_.pokeMeshDistance.map(_.st))
       val siteBiot2d = Averaging.mean(trialsAtSite.map(_.biot2d))
-      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid))
+      val siteI1 = Averaging.meanGridDouble(trialsAtSite.map(_.i1Grid_peak))
       val outFile = new File(outDir, "avg-grid-%s.csv" format site)
       val o = new FileWriter(outFile)
       
