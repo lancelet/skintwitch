@@ -14,6 +14,10 @@ options(tikzLatex = "xelatex")
 # Read the CSV file containing minimum principal (compressive) strains
 csvdata = read.csv("../method-paper-output/min-prin-strains.csv")
 
+# Re-order the trial names
+csvdata$Trial <- ordered(csvdata$Trial, levels=c("Control", "G1", "G2", "G3", 
+    "T6", "T11", "T16"))
+
 # Drop girthline data
 csvdata = subset(csvdata, !csvdata$Trial == "Girthline")
 

@@ -9,8 +9,8 @@ setwd("/Users/jsm/Documents/dev/skintwitch/result-paper-scripts")
 csvdata = read.csv("../output/csv/min-prin-strains.csv")
 
 # Drop girthline data (and re-order the levels)
-levels(csvdata$Site) <- c("Control", "T6", "T11", "T16", "Girthline",
-    "G1", "G2", "G3")
+csvdata$Site <- ordered(csvdata$Site, levels=c("Control", "G1", "G2", "G3", 
+    "T6", "T11", "T16"))
 data <- subset(csvdata, 
     (!csvdata$Site == "Girthline" &
      !csvdata$Site == "G1" &
