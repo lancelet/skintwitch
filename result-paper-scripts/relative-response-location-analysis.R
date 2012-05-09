@@ -1,5 +1,6 @@
 library(ggplot2)
 library(psych)
+library(ez)
 
 # Set working directory (hard coded)
 setwd("/Users/jsm/Documents/dev/skintwitch/result-paper-scripts")
@@ -39,33 +40,10 @@ relYPlot <- qplot(csvdata$Site, csvdata$RelY, data=csvdata, geom="boxplot",
     theme_bw()
 print(relYPlot)
 
-# One-way ANOVA, with Tukey HSD post-hoc test
+# One-way ANOVA, multiple-comparisons
 print("Analysis of Variance: RelX")
-anvx = aov(RelX ~ Site + Error(Horse/Site), data=csvdata)
-print(summary(anvx))
+print(ezANOVA(data=csvdata, dv=.(RelX), wid=.(Horse), within=.(Site)))
 print("Analysis of Variance: RelY")
-anvy = aov(RelY ~ Site + Error(Horse/Site), data=csvdata)
-print(summary(anvy))
+print(ezANOVA(data=csvdata, dv=.(RelY), wid=.(Horse), within=.(Site)))
 
-# Test whether different categories have means different from zero
-t6 = subset(csvdata, csvdata$Site == "T6")
-t11 = subset(csvdata, csvdata$Site == "T11")
-t16 = subset(csvdata, csvdata$Site == "T16")
-print("T6 RelX")
-print(t.test(t6$RelX, alternative=c("two.sided")))
-print(describe(t6$RelX))
-print("T6 RelY")
-print(t.test(t6$RelY, alternative=c("two.sided")))
-print(describe(t6$RelY))
-print("T11 RelX")
-print(t.test(t11$RelX, alternative=c("two.sided")))
-print(describe(t11$RelX))
-print("T11 RelY")
-print(t.test(t11$RelY, alternative=c("two.sided")))
-print(describe(t11$RelY))
-print("T16 RelX")
-print(t.test(t16$RelX, alternative=c("two.sided")))
-print(describe(t16$RelX))
-print("T16 RelY")
-print(t.test(t16$RelY, alternative=c("two.sided")))
-print(describe(t16$RelY))
+# No post-hoc testing; ANOVA not significant.
