@@ -27,13 +27,12 @@ class I1PlotActor(
   private val lblActor = new vtkTextActor {
     GetPositionCoordinate.SetCoordinateSystemToNormalizedViewport
     SetInput("Computing I1 data...")
-    //SetPosition(0.01 + 0.3 - GetWidth, 0.05 + 0.3 - GetHeight)
     SetPosition(0.01, 0.05 + 0.15)
     GetProperty.SetColor(0.4, 0.4, 0.4)
+    //GetProperty.SetColor(0.0, 0.0, 0.0)  // for screenshot in method paper
   }
   
   private val plotActor = new vtkXYPlotActor {
-    //SetYRange()
     SetWidth(0.3)
     ShowReferenceXLineOn
     SetHeight(0.15)
@@ -44,6 +43,7 @@ class I1PlotActor(
     SetPosition(0.01, 0.05 + 0.15)
     GetProperty.SetLineWidth(1.5)
     GetProperty.SetColor(0.6, 0.6, 0.6)
+    //GetProperty.SetColor(0.0, 0.0, 0.0)  // for screenshot in method paper
     VisibilityOff
   }
   

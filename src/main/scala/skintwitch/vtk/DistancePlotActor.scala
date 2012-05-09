@@ -27,6 +27,7 @@ class DistancePlotActor(
     SetInput("Computing distance data...")
     SetPosition(0.01, 0.05)
     GetProperty.SetColor(0.4, 0.4, 0.4)
+    //GetProperty.SetColor(0.0, 0.0, 0.0) // for screenshot in method paper
   }
   
   private val plotActor = new vtkXYPlotActor {
@@ -43,6 +44,7 @@ class DistancePlotActor(
     SetPosition(0.01, 0.05)
     GetProperty.SetLineWidth(1.5)
     GetProperty.SetColor(0.6, 0.6, 0.6)
+    //GetProperty.SetColor(0.0, 0.0, 0.0)  // for screenshot in method paper
     ShowReferenceYLineOn
     VisibilityOff
   }
