@@ -44,6 +44,8 @@ trait Vec3Ops {
 
 object Vec3 {
   
+  def apply(x: Double, y: Double, z: Double): Vec3 = SimpleVec3(x, y, z)
+  
   private final case class SimpleVec3(x: Double, y: Double, z: Double) 
   extends Vec3 with Vec3Ops
   
