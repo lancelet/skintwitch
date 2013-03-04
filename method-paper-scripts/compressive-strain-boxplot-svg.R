@@ -5,11 +5,11 @@ library(ggplot2)
 setwd("/Users/jsm/Documents/dev/skintwitch/method-paper-scripts")
 
 # Set TikZ options
-standAlone = FALSE
+#standAlone = FALSE
 fontSize = 12
-tf = file.path(getwd(), "compressive-strain-boxplot.tex")
-tikz(tf, standAlone = standAlone, width = 4, height = 4, pointsize=fontSize)
-options(tikzLatex = "xelatex")
+#tf = file.path(getwd(), "compressive-strain-boxplot.tex")
+#tikz(tf, standAlone = standAlone, width = 4, height = 4, pointsize=fontSize)
+#options(tikzLatex = "xelatex")
 
 # Read the CSV file containing minimum principal (compressive) strains
 csvdata = read.csv("../method-paper-output/min-prin-strains.csv")
@@ -45,8 +45,9 @@ print(q)
 dev.off()
 
 # Show the box plot
-if (standAlone) {
-    tools::texi2dvi(tf, pdf=TRUE)
-    system(paste(getOption("pdfviewer"), 
-        file.path(getwd(), "compressive-strain-boxplot.pdf")))
-}
+#if (standAlone) {
+#    tools::texi2dvi(tf, pdf=TRUE)
+#    system(paste(getOption("pdfviewer"), 
+#        file.path(getwd(), "compressive-strain-boxplot.pdf")))
+#}
+ggsave(q, file="compressive-strain-boxplot.svg")
