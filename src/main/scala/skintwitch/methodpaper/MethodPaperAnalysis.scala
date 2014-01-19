@@ -44,7 +44,7 @@ object MethodPaperAnalysis extends App {
     val trial = try {
       Trial(inTrial).result
     } catch { // CAUTION: INDISCRIMINATE EXCEPTION CATCHING: REPORT ALL BELOW
-      case e => {
+      case e : Throwable => {
         println("Exception loading trial %s" format inTrial.inputFile.getName)
         println ("%s" format e)
         throw new Exception(e)

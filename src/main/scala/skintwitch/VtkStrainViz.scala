@@ -273,10 +273,13 @@ class VtkStrainViz {
     setMinimumSize(new Dimension(0, 0))
     setPreferredSize(new Dimension(0, 0))    
     setInteractorStyle(new vtkInteractorStyleTrackballCamera)
-    GetRenderWindow.LineSmoothingOn
-    GetRenderWindow.PolygonSmoothingOn
-    GetRenderWindow.SetAAFrames(16)
-    GetRenderer.SetBackground(1, 1, 1)
+    // the settings below improve rendering quality (eg. for screenshots)
+    if (false) {
+      GetRenderWindow.LineSmoothingOn
+      GetRenderWindow.PolygonSmoothingOn
+      GetRenderWindow.SetAAFrames(16)
+      GetRenderer.SetBackground(1, 1, 1)
+    }
   }
   private val vtkHostPanel = new JPanel(new BorderLayout()) {
     add(vtkPanel, BorderLayout.CENTER)

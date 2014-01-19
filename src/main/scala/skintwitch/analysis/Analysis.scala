@@ -40,7 +40,7 @@ class Analysis {
       //  use much less).
       Trial(inTrial).result
     } catch { // THIS IS BAD: DO NOT CATCH ALL EXCEPTIONS INDISCRIMINATELY
-      case e => {
+      case e: Throwable => {
         println("Exception loading trial %s" format inTrial.inputFile.getName)
         println("%s" format e)
         throw new Exception(e)

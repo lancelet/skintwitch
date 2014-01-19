@@ -9,9 +9,9 @@ import skintwitch.{ Grid, MarkerGrid, VGrid }
 import simplex3d.math.double._
 import simplex3d.math.double.functions._
 import vtk.vtkCamera
-import scalala.library.Library.normalize
-import scalala.tensor.Matrix
-import scalala.tensor.dense.{ DenseMatrix, DenseVector }
+import breeze.linalg.normalize
+import breeze.linalg.Matrix
+import breeze.linalg.{ DenseMatrix, DenseVector }
 import java.io.{ BufferedOutputStream, BufferedWriter, File, FileOutputStream, 
                  OutputStreamWriter, FilenameFilter }
 import simplex3d.noise.ClassicalGradientNoise

@@ -1,12 +1,12 @@
 import sbt._
-import Keys._
-import Process._
+import sbt.Keys._
+import sbt.Process._
 import scala.collection.immutable._
 import java.io.File
 
 object BuildSettings {
   val buildOrganization = "com.github.skintwitch"
-  val buildScalaVersion = "2.9.2"
+  val buildScalaVersion = "2.10.3"
   val buildVersion      = "0.1-SNAPSHOT"
   val buildSettings = Defaults.defaultSettings ++ Seq(
     organization    := buildOrganization,
@@ -26,20 +26,22 @@ object Resolvers {
 }
 
 object Dependencies {
-  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.9.2"
-  val scalaTest   = "org.scalatest" %% "scalatest" % "1.7.2" % "test"
+  val scalaSwing  = "org.scala-lang" % "scala-swing" % "2.10.3"
+  val scalaTest   = "org.scalatest" %% "scalatest" % "1.9.1" % "test"
   val jCommon     = "org.jfree" % "jcommon" % "1.0.17"
   val jFreechart  = "org.jfree" % "jfreechart" % "1.0.14"
   val xmlGraphics = "org.apache.xmlgraphics" % "xmlgraphics-commons" % "1.4"
   val iText       = "com.lowagie" % "itext" % "2.1.5" intransitive()
   val migLayout   = "com.miglayout" % "miglayout-swing" % "4.2"
-  val liftjson    = "net.liftweb" %% "lift-json" % "2.5-SNAPSHOT"
+  val liftjson    = "net.liftweb" %% "lift-json" % "2.5.1"
   val ejml        = "com.googlecode.efficient-java-matrix-library" % "ejml" %
                         "0.18"
   val vtk         = "vtk" % "vtk" % "5.8.0"
+  val breeze      = "org.scalanlp" %% "breeze-math" % "0.3-SNAPSHOT"
+  val actors      = "org.scala-lang" % "scala-actors" % "2.10.3"
   val allDependencies = Seq(
     scalaSwing, scalaTest, jCommon, jFreechart, xmlGraphics, iText, migLayout,
-    liftjson, ejml, vtk
+    liftjson, ejml, vtk, breeze, actors
   )
 }
 
@@ -57,6 +59,7 @@ object SkinTwitchBuild extends Build {
     val destFile = new File("./lib/vtk-native.zip")
     IO.download(new URL(vtkNativeURL), destFile)
     def unzip() {
+      import sbt.Process._
       "unzip -j ./lib/vtk-native.zip -d ./lib" !
     }
     unzip
@@ -71,6 +74,7 @@ object SkinTwitchBuild extends Build {
     val destFile = new File("./lib/vtk-native.zip")
     IO.download(new URL(vtkNativeURL), destFile)
     def unzip() {
+      import sbt.Process._
       "unzip -j ./lib/vtk-native.zip -d ./lib" !
     }
     unzip

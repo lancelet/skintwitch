@@ -3,8 +3,8 @@ package skintwitch.rman
 import math.{cos, Pi, sin, sqrt}
 import skintwitch.Linearizable
 import simplex3d.math.double.Mat4
-import scalala.library.LinearAlgebra.inv
-import scalala.tensor.dense.DenseMatrix
+import breeze.linalg.inv
+import breeze.linalg.DenseMatrix
 
 /** 3D vector. */
 case class V3(e0: Double, e1: Double, e2: Double) {
@@ -106,7 +106,7 @@ case class M4(e00: Double, e01: Double, e02: Double, e03: Double,
       Array(e10, e11, e12, e13),
       Array(e20, e21, e22, e23),
       Array(e30, e31, e32, e33))
-    val q = scalala.library.LinearAlgebra.inv(m)
+    val q = breeze.linalg.inv(m)
     M4(q(0,0), q(0,1), q(0,2), q(0,3),
        q(1,0), q(1,1), q(1,2), q(1,3),
        q(2,0), q(2,1), q(2,2), q(2,3),
