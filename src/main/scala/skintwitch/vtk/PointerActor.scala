@@ -115,7 +115,7 @@ extends AnimatedActor {
       if (meshDistance.distance < 0) {
         distActor.GetProperty.SetColor(1.0, 0.5, 0.5)
       } else {
-        distActor.GetProperty.SetColor(0.0, 0.0, 0.0)
+        distActor.GetProperty.SetColor(0.8, 0.8, 0.8)
       }
     } else {
       distActor.GetProperty.SetColor(0.2, 0.2, 0.2)
